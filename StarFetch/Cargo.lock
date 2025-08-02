@@ -3,14 +3,6 @@
 version = 4
 
 [[package]]
-name = "StarFetch"
-version = "0.1.0"
-dependencies = [
- "ansi_term",
- "sysinfo",
-]
-
-[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -101,6 +93,14 @@ checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "starfetch"
+version = "0.1.0"
+dependencies = [
+ "ansi_term",
+ "sysinfo",
 ]
 
 [[package]]

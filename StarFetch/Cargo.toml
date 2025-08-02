@@ -1,8 +1,8 @@
 [package]
-name = "StarFetch"
+name = "starfetch"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
-sysinfo = "0.30.5"
 ansi_term = "0.12"
+sysinfo = "0.30"
