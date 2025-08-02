@@ -1,6 +1,7 @@
 use ansi_term::Style;
 use ansi_term::Color::Cyan;  
 
+// Setting ascii painting
 pub fn ascii_art() -> &'static str {
     r#"
 _____/\\\\\\\\\\\_______________________________________________/\\\\\\\\\\\\\\\_____________________________________________/\\\_________
@@ -15,6 +16,7 @@ _____/\\\\\\\\\\\_______________________________________________/\\\\\\\\\\\\\\\
     "#
 }
 
+// Colored the character painting
 pub fn colored_art() -> String {
     Style::new()
         .fg(Cyan)

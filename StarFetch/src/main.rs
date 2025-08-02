@@ -1,23 +1,23 @@
-// 声明模块而不是使用库方式
+// Import the function you need
 mod art;
 mod hyperlink;
 mod system;
 
 fn main() {
-    // 输出彩色LOGO
-    println!("{}", art::colored_art());  // 修复函数名
+    // Output the ascii painting
+    println!("{}", art::colored_art());
     
-    // 开发者信息（带超链接）
+    // Output link & text
     print!("Developed by ");
     println!("{}", hyperlink::hyperlink(
-        &hyperlink::styled_developer_name(),  // 修复函数名
+        &hyperlink::styled_developer_name(),  
         "https://github.com/Linus-Shyu"
     ));
     
-    // 空行分隔
+    // Opimization the UI
     println!();
     
-    // 系统信息
-    let _sys = system::init_system(); // 初始化系统信息
+    // Output system information
+    let _sys = system::init_system(); // Init the library
     system::print_hardware_info();
 }
