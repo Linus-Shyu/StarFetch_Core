@@ -1,5 +1,6 @@
 use ansi_term::Style;
 use sysinfo::System;
+use ansi_term::Color::{Red, Cyan};
 
 // Exchange url link function
 fn hyperlink(text: &str, url: &str) -> String {
@@ -41,9 +42,25 @@ fn linus_shyu() -> String {
 
 // System information
 fn hard_ware() {
-    println!("System:{}", System::name().unwrap_or_default());
-    println!("Kernel:{}", System::kernel_version().unwrap_or_default());
-    println!("Hostname:{}", System::host_name().unwrap_or_default());
+    let host_name = System::host_name().unwrap_or_else(|| "Unknown".to_string());
+    println!(
+        "{}",
+        Cyan.paint(&host_name)
+    );
+    let separator = "-".repeat(host_name.len());
+    println!("{}", separator);
+    let os_name = System::name().unwrap_or_else(|| "Unknown".to_string());
+    println!(
+        "{}{}",
+        Red.paint("OS:"),
+        Cyan.paint(os_name)
+    );
+    let kernel_version = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
+    println!(
+        "{}{}",
+        Red.paint("Kernel:"),
+        Cyan.paint(kernel_version)
+    );
 }
 
 // init sysinfo
@@ -69,11 +86,15 @@ fn main() {
     // Output developer name
     println!("{}", linked_text());
 
+    // None line
+    println!(" ");
+
     // init sysinfo
     init_system();
 
     // Output system information
     hard_ware();
 
+    
     // Hardware information
 }
