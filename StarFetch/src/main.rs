@@ -20,4 +20,6 @@ fn main() {
     // Output system information
     let _sys = system::init_system(); // Init the library
     system::print_hardware_info();
+    system::system_uptime();
+    
 }
