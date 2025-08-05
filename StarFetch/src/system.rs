@@ -49,11 +49,14 @@ pub fn system_uptime() {
 
             // Output the Data
             println!(
-                "{} {} days, {} hours, {} minutes",
+                "{} {} {} {} {} {} {}",
                 Green.paint("Uptime:"),
                 Cyan.paint(days.to_string()),
+                Green.paint("Days"),
                 Cyan.paint(hours.to_string()),
-                Cyan.paint(minutes.to_string())
+                Green.paint("Hours"),
+                Cyan.paint(minutes.to_string()),
+                Green.paint("Minutes")
 
             );
         },
