@@ -1,0 +1,124 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 当推送版本标签时触发，如 v0.2.0
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: starfetch-linux-x86_64
+            binary_name: starfetch
+            archive_format: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: starfetch-windows-x86_64
+            binary_name: starfetch.exe
+            archive_format: zip
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: starfetch-macos-x86_64
+            binary_name: starfetch
+            archive_format: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: starfetch-macos-aarch64
+            binary_name: starfetch
+            archive_format: tar.gz
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Setup MSVC (Windows only)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: 14.29
+
+      - name: Cache cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            StarFetch/target/
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        working-directory: StarFetch
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create archive (Linux/macOS)
+        if: runner.os != 'Windows'
+        working-directory: StarFetch/target/${{ matrix.target }}/release
+        run: |
+          tar czf ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }} ${{ matrix.binary_name }}
+        shell: bash
+
+      - name: Create archive (Windows)
+        if: runner.os == 'Windows'
+        working-directory: StarFetch/target/${{ matrix.target }}/release
+        run: |
+          Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }}
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: StarFetch/${{ matrix.artifact_name }}.${{ matrix.archive_format }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Extract tag name
+        id: tag
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.tag.outputs.TAG }}
+          body: |
+            ## Changes in ${{ steps.tag.outputs.TAG }}
+            
+            ### Downloads
+            
+            - **Linux (x86_64)**: [starfetch-linux-x86_64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-linux-x86_64.tar.gz)
+            - **Windows (x86_64)**: [starfetch-windows-x86_64.zip](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-windows-x86_64.zip)
+            - **macOS (Intel)**: [starfetch-macos-x86_64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-macos-x86_64.tar.gz)
+            - **macOS (Apple Silicon)**: [starfetch-macos-aarch64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-macos-aarch64.tar.gz)
+          
+          files: |
+            artifacts/*/starfetch-*.tar.gz
+            artifacts/*/starfetch-*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
