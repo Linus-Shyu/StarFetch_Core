@@ -1,5 +1,5 @@
+use ansi_term::Color::Cyan;
 use ansi_term::Style;
-use ansi_term::Color::Cyan;  
 
 // Setting ascii painting
 pub fn ascii_art() -> &'static str {
@@ -16,10 +16,26 @@ _____/\\\\\\\\\\\_______________________________________________/\\\\\\\\\\\\\\\
     "#
 }
 
-// Colored the character painting
-pub fn colored_art() -> String {
-    Style::new()
-        .fg(Cyan)
-        .paint(ascii_art())
-        .to_string()
+pub fn compact_ascii_art() -> &'static str {
+    r#"
+    ╔════════════════════════════════╗
+    ║   ★  STARFETCH  ★            ║
+    ╚════════════════════════════════╝
+    "#
+}
+
+// width of terminal
+pub fn get_terminal_width() -> Option<usize> {
+    terminal_size::terminal_size().map(|(w, _)| w.0 as usize)
+}
+
+// OUtput the right ascii character
+pub fn adaptive_art() -> String {
+    let art = match get_terminal_width() {
+        Some(width) if width >= 120 => ascii_art(),
+        Some(_) => compact_ascii_art(),
+        None => ascii_art(),
+    };
+
+    Style::new().fg(Cyan).paint(art).to_string()
 }

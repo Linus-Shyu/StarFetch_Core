@@ -1,5 +1,5 @@
+use ansi_term::Color::Green;
 use ansi_term::Style;
-use ansi_term::Color::Green;  
 
 // Passing url & text
 pub fn hyperlink(text: &str, url: &str) -> String {
