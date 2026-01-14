@@ -29,7 +29,7 @@ pub fn get_terminal_width() -> Option<usize> {
     terminal_size::terminal_size().map(|(w, _)| w.0 as usize)
 }
 
-//  
+// Compare UI size 
 pub fn adaptive_art() -> String {
     let art = match get_terminal_width() {
         Some(width) if width >= 120 => ascii_art(),
