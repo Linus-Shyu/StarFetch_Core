@@ -32,7 +32,7 @@ pub fn get_terminal_width() -> Option<usize> {
 // Compare UI size 
 pub fn adaptive_art() -> String {
     let art = match get_terminal_width() {
-        Some(width) if width >= 120 => ascii_art(),
+        Some(width) if width >= 147 => ascii_art(),
         Some(_) => compact_ascii_art(),
         None => ascii_art(),
     };
