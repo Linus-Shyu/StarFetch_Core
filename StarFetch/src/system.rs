@@ -1,6 +1,8 @@
 use ansi_term::Color::{Cyan, Green};
 use sysinfo::System as SysInfoSystem;
 use systemstat::{Platform, System};
+use std::process::Command;
+
 
 // Init the system library
 pub fn init_system() -> SysInfoSystem {
@@ -59,3 +61,41 @@ pub fn system_uptime() {
         Err(e) => eprintln!("Error getting uptime: {}", e),
     }
 }
+
+// Calculate package number
+pub fn print_packages()
+{
+    let mut package_managers = Vec::new();
+
+    // macOS: Homebrew
+    if let Ok(output) = Command::new("brew")
+        .args(&["list", "--formula"])
+        .output()
+    {
+        if output.status.success() {
+            let count = String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .count();
+            if count > 0 {
+                package_managers.push(("brew", count));
+            }
+        }
+    }
+
+    // Output information about packages
+    if !package_managers.is_empty() {
+        let packages_str: Vec<String> = package_managers
+            .iter()
+            .map(|(name, count)| format!("{} ({})", count, name))
+            .collect();
+
+        println!(
+            "{}{}",
+            Green.paint("Packages: "),
+            Cyan.paint(packages_str.join(", "))
+        );
+    }
+}
+
+
+
