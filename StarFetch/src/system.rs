@@ -3,7 +3,6 @@ use sysinfo::System as SysInfoSystem;
 use systemstat::{Platform, System};
 use std::process::Command;
 
-
 // Init the system library
 pub fn init_system() -> SysInfoSystem {
     let mut sys = SysInfoSystem::new_all();
@@ -22,12 +21,12 @@ pub fn print_hardware_info() {
 
     // Setting & Output OS name
     if let Some(os_name) = SysInfoSystem::name() {
-        println!("{}{}", Green.paint("OS:"), Cyan.paint(os_name));
+        println!("{} {}", Green.paint("OS:"), Cyan.paint(os_name));
     }
 
     // Setting & Output kernel information
     if let Some(kernel) = SysInfoSystem::kernel_version() {
-        println!("{}{}", Green.paint("Kernel:"), Cyan.paint(kernel));
+        println!("{} {}", Green.paint("Kernel:"), Cyan.paint(kernel));
     }
 }
 
@@ -63,8 +62,7 @@ pub fn system_uptime() {
 }
 
 // Calculate package number
-pub fn print_packages()
-{
+pub fn print_packages() {
     let mut package_managers = Vec::new();
 
     // macOS: Homebrew
@@ -97,5 +95,53 @@ pub fn print_packages()
     }
 }
 
+// CPU
+pub fn print_cpu_info() {
+    let mut sys = SysInfoSystem::new_all();
+    sys.refresh_all();
 
+    // CPU core
+    println!(
+        "{} {}",
+        Green.paint("CPU Cores:"),
+        Cyan.paint(sys.cpus().len().to_string())
+    );
 
+    // CPU brand
+    if let Some(cpu) = sys.cpus().first() {
+        println!(
+            "{} {}",
+            Green.paint("CPU Brand:"),
+            Cyan.paint(cpu.brand())
+        );
+
+        println!(
+            "{} {} MHz",
+            Green.paint("CPU Frequency:"),
+            Cyan.paint(cpu.frequency().to_string())
+        );
+    }
+
+    // CPU usage
+    println!(
+        "{} {:.2}%",
+        Green.paint("CPU Usage:"),
+        Cyan.paint(sys.global_cpu_usage().to_string())
+    );
+}
+
+pub fn print_memory_info() {
+    let mut sys = SysInfoSystem::new_all();
+    sys.refresh_all();
+    println!(
+        "{} {:.2} GB",
+        Green.paint("Total Memory:"),
+        Cyan.paint((sys.total_memory() as f64 / 1024.0 / 1024.0 / 1024.0).to_string())
+    );
+
+    println!(
+        "{} {:.2} GB",
+        Green.paint("Used Memory:"),
+        Cyan.paint((sys.used_memory() as f64 / 1024.0 / 1024.0 / 1024.0).to_string())
+    );
+}
