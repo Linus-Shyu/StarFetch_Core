@@ -9,11 +9,19 @@ fn main() {
 
     // Output link & text
     print!("Developed by ");
-    println!(
+    print!(
         "{}",
         hyperlink::hyperlink(
             &hyperlink::styled_developer_name(),
             "https://github.com/Linus-Shyu"
+        )
+    );
+    print!(" and ");
+    print!(
+        "{}",
+        hyperlink::hyperlink(
+            &hyperlink::styled_developer_name_dylan(),
+            "https://github.com/xs10l3"
         )
     );
 

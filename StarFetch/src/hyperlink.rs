@@ -74,3 +74,6 @@ pub fn styled_developer_name() -> String {
     "Linus Shyu".to_string()
 }
 
+pub fn styled_developer_name_dylan() -> String {
+    "Dylan Su".to_string()
+}
