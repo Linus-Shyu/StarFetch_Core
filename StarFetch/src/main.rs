@@ -25,4 +25,6 @@ fn main() {
     system::print_hardware_info();
     system::system_uptime();
     system::print_packages();
+    system::print_cpu_info();
+    system::print_memory_info();
 }
