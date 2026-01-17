@@ -1,5 +1,6 @@
 use ansi_term::Color::{Cyan, Green};
 use sysinfo::System as SysInfoSystem;
+use sysinfo::Disks;
 use systemstat::{Platform, System};
 use std::process::Command;
 
@@ -143,5 +144,73 @@ pub fn print_memory_info() {
         "{} {:.2} GB",
         Green.paint("Used Memory:"),
         Cyan.paint((sys.used_memory() as f64 / 1024.0 / 1024.0 / 1024.0).to_string())
+    );
+}
+
+pub fn print_swap_info() {
+    let mut sys = SysInfoSystem::new_all();
+    sys.refresh_all();
+    println!("{} {:.2} GB",
+        Green.paint("Total Swap Memory:"),
+        Cyan.paint((sys.total_swap() as f64 / 1024.0 / 1024.0 / 1024.0).to_string())
+    );
+
+    println!("{} {:.2} GB",
+        Green.paint("Used Swap Memory:"),
+        Cyan.paint((sys.used_swap() as f64 / 1024.0 / 1024.0 / 1024.0).to_string())
+    );
+}
+pub fn print_disk_info() {
+    let disks = Disks::new_with_refreshed_list();
+
+    let mut total_space = 0u64;
+    let mut available_space = 0u64;
+    let mut seen_devices = std::collections::HashSet::new();
+
+    for disk in disks.list() {
+        let mount_point = disk.mount_point().to_string_lossy();
+
+        // macOS: 跳过 /System/Volumes/* 挂载点，只保留根目录
+        if mount_point.starts_with("/System/Volumes/") {
+            continue;
+        }
+
+        let fs = disk.file_system().to_string_lossy();
+        if fs.contains("tmpfs") ||
+            fs.contains("devfs") ||
+            fs.contains("sysfs") ||
+            mount_point.starts_with("/dev") ||
+            mount_point.starts_with("/sys") ||
+            mount_point.starts_with("/proc") {
+            continue;
+        }
+
+        let device_name = disk.name().to_string_lossy().to_string();
+        if !seen_devices.insert(device_name) {
+            continue;
+        }
+
+        total_space += disk.total_space();
+        available_space += disk.available_space();
+    }
+
+    let used_space = total_space - available_space;
+
+    println!(
+        "{} {:.2} GB",
+        Green.paint("Total Disk:"),
+        Cyan.paint((total_space as f64 / 1_073_741_824.0).to_string())
+    );
+
+    println!(
+        "{} {:.2} GB",
+        Green.paint("Used Disk:"),
+        Cyan.paint((used_space as f64 / 1_073_741_824.0).to_string())
+    );
+
+    println!(
+        "{} {:.2} GB",
+        Green.paint("Available Disk:"),
+        Cyan.paint((available_space as f64 / 1_073_741_824.0).to_string())
     );
 }
