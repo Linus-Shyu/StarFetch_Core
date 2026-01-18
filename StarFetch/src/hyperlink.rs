@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 // Check the Terminal type
+=======
+// Cheak the Terminal type
+
+>>>>>>> a2f386d (Add apt packages calculator)
 fn detect_terminal() -> TerminalType {
     // Terminal variable
     if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
@@ -16,7 +21,11 @@ fn detect_terminal() -> TerminalType {
         }
     }
 
+<<<<<<< HEAD
     //  Check Terminal
+=======
+    // Check Terminal
+>>>>>>> a2f386d (Add apt packages calculator)
     if let Ok(term) = std::env::var("TERM") {
         if term.contains("xterm") || term.contains("screen") {
             return TerminalType::XTerm;
