@@ -25,7 +25,7 @@ fn main() {
         )
     );
 
-    // Opimization the UI
+    // Optimization the UI
     println!();
 
     // Output system information

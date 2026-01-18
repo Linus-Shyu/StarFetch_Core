@@ -1,4 +1,4 @@
-// Cheak the Terminal type
+// Check the Terminal type
 fn detect_terminal() -> TerminalType {
     // Terminal variable
     if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
@@ -16,7 +16,7 @@ fn detect_terminal() -> TerminalType {
         }
     }
 
-    //  Cheak Terminal
+    //  Check Terminal
     if let Ok(term) = std::env::var("TERM") {
         if term.contains("xterm") || term.contains("screen") {
             return TerminalType::XTerm;
@@ -69,7 +69,7 @@ pub fn hyperlink(text: &str, url: &str) -> String {
     }
 }
 
-// Exchange data to string text ans rendering
+// Exchange data to string text and rendering
 pub fn styled_developer_name() -> String {
     "Linus Shyu".to_string()
 }
