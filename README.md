@@ -1,5 +1,7 @@
 # StarFetch ⭐
 
+<iframe style="width:100%;height:auto;min-width:600px;min-height:400px;" src="https://www.star-history.com/embed?secret=#Linus-Shyu/StarFetch_Core&type=date&legend=top-left" frameBorder="0"></iframe>
+
 A beautiful and fast system information tool written in Rust, inspired by neofetch. StarFetch displays your system information with elegant ASCII art and smart terminal adaptation.
 
 ![Rust](https://img.shields.io/badge/rust-stable-orange.svg)
