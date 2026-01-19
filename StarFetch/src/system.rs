@@ -35,7 +35,7 @@ fn calculate_max_info_width() -> usize {
     max_len = max_len.max("Uptime: 999 Days 99 Hours 99 Minutes".len());
     
     // Brew Packages (check actual)
-    if let Ok(output) = Command::new("brew").args(&["list", "--formula"]).output() {
+    if let Ok(output) = Command::new("brew").args(["list", "--formula"]).output() {
         if output.status.success() {
             let count = String::from_utf8_lossy(&output.stdout).lines().count();
             if count > 0 {
@@ -44,18 +44,18 @@ fn calculate_max_info_width() -> usize {
         }
     }
 
-    // Brew package
-    if let Ok(output) = Command::new("dpkg").args(&["-l"]).output() {
-    if output.status.success() {
-        let count = String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .filter(|line| line.starts_with("ii"))
-            .count();
-        if count > 0 {
-            max_len = max_len.max(format!("Packages: {} (apt)", count).len());
+    // APT Packages (check actual)
+    if let Ok(output) = Command::new("dpkg").args(["-l"]).output() {
+        if output.status.success() {
+            let count = String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .filter(|line| line.starts_with("ii"))
+                .count();
+            if count > 0 {
+                max_len = max_len.max(format!("Packages: {} (apt)", count).len());
+            }
         }
     }
-}
     
     // CPU lines
     max_len = max_len.max(format!("CPU Cores: {}", sys.cpus().len()).len());
@@ -73,6 +73,18 @@ fn calculate_max_info_width() -> usize {
     
     let used_mem = sys.used_memory() as f64 / 1024.0 / 1024.0 / 1024.0;
     max_len = max_len.max(format!("Used Memory: {:.2} GB", used_mem).len());
+    
+    // Swap lines
+    let total_swap = sys.total_swap() as f64 / 1024.0 / 1024.0 / 1024.0;
+    max_len = max_len.max(format!("Total Swap Memory: {:.2} GB", total_swap).len());
+    
+    let used_swap = sys.used_swap() as f64 / 1024.0 / 1024.0 / 1024.0;
+    max_len = max_len.max(format!("Used Swap Memory: {:.2} GB", used_swap).len());
+    
+    // Disk lines (estimate maximum)
+    max_len = max_len.max("Total Disk: 9999.99 GB".len());
+    max_len = max_len.max("Used Disk: 9999.99 GB".len());
+    max_len = max_len.max("Available Disk: 9999.99 GB".len());
     
     max_len
 }
@@ -137,7 +149,7 @@ pub fn print_packages() {
 
     // macOS: Homebrew
     if let Ok(output) = Command::new("brew")
-        .args(&["list", "--formula"])
+        .args(["list", "--formula"])
         .output()
     {
         if output.status.success() {
@@ -150,9 +162,10 @@ pub fn print_packages() {
         }
     }
 
-    // Linux
+    // Linux: APT (try dpkg first)
+    let mut apt_found = false;
     if let Ok(output) = Command::new("dpkg")
-        .args(&["-l"])
+        .args(["-l"])
         .output()
     {
         if output.status.success() {
@@ -162,22 +175,25 @@ pub fn print_packages() {
                 .count();
             if count > 0 {
                 package_managers.push(("apt", count));
+                apt_found = true;
             }
         }
     }
 
     // Fallback to apt list if dpkg fails
-    else if let Ok(output) = Command::new("apt")
-        .args(&["list", "--installed"])
-        .output()
-    {
-        if output.status.success() {
-            let count = String::from_utf8_lossy(&output.stdout)
-                .lines()
-                .filter(|line| line.contains("/"))  // Filter out header lines
-                .count();
-            if count > 0 {
-                package_managers.push(("apt", count));
+    if !apt_found {
+        if let Ok(output) = Command::new("apt")
+            .args(["list", "--installed"])
+            .output()
+        {
+            if output.status.success() {
+                let count = String::from_utf8_lossy(&output.stdout)
+                    .lines()
+                    .filter(|line| line.contains("/"))  // Filter out header lines
+                    .count();
+                if count > 0 {
+                    package_managers.push(("apt", count));
+                }
             }
         }
     }
