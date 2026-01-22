@@ -56,6 +56,23 @@ fn calculate_max_info_width() -> usize {
             }
         }
     }
+
+    // Winget Packages
+    if let Ok(output) = Command::new("winget")
+        .args(["list", "--accept-source-agreements"])
+        .output() 
+    {
+        if output.status.success() {
+            let full_output = String::from_utf8_lossy(&output.stdout);
+                let line_count = full_output.lines()
+                .filter(|l| !l.trim().is_empty())
+                .count();
+            if line_count > 2 {
+                let count = line_count - 2;
+                max_len = max_len.max(format!("Packages: {} (winget)", count).len());
+            }
+        }
+    }
     
     // CPU lines
     max_len = max_len.max(format!("CPU Cores: {}", sys.cpus().len()).len());
@@ -194,6 +211,19 @@ pub fn print_packages() {
                 if count > 0 {
                     package_managers.push(("apt", count));
                 }
+            }
+        }
+    }
+
+    // Winget
+    if let Ok(output) = Command::new("winget").args(["list", "--accept-source-agreements"]).output() {
+        if output.status.success() {
+            let full_output = String::from_utf8_lossy(&output.stdout);
+
+            let line_count = full_output.lines().filter(|l| !l.trim().is_empty()).count();
+
+            if line_count > 2 {
+                package_managers.push(("winget", line_count - 2));
             }
         }
     }
