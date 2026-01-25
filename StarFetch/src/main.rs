@@ -3,11 +3,29 @@ mod art;
 mod hyperlink;
 mod system;
 
+use clap::Parser;
+
+#[derive(Parser)]
+#[command(name = "starfetch")]
+#[command(about = "A Beauty & fast system information tool", long_about = None)]
+struct Args {
+    /// Show installed package count (brew, apt, winget, etc.)
+    #[arg(short, long, alias = "p")]
+    packages: bool,
+}
+
 fn main() {
-    // Output the ascii painting
+    let args = Args::parse();
+
+    // -p / --packages: only show package count, then exit
+    if args.packages {
+        system::print_packages();
+        return;
+    }
+
+    // Full interface
     println!("{}", art::adaptive_art());
 
-    // Output link & text
     print!("Developed by ");
     print!(
         "{}",
@@ -25,11 +43,9 @@ fn main() {
         )
     );
 
-    // Optimization the UI
     println!();
 
-    // Output system information
-    let _sys = system::init_system(); // Init the library
+    let _sys = system::init_system();
     system::print_hardware_info();
     system::system_uptime();
     system::print_packages();

@@ -129,34 +129,91 @@ pub fn print_hardware_info() {
     }
 }
 
-// System uptime
+// Format and print uptime from seconds (shared helper)
+fn print_uptime_seconds(secs: u64) {
+    let days = secs / 86400;
+    let hours = (secs % 86400) / 3600;
+    let minutes = (secs % 3600) / 60;
+    println!(
+        "{} {} {} {} {} {} {}",
+        Green.paint("Uptime:"),
+        Cyan.paint(days.to_string()),
+        Green.paint("Days"),
+        Cyan.paint(hours.to_string()),
+        Green.paint("Hours"),
+        Cyan.paint(minutes.to_string()),
+        Green.paint("Minutes")
+    );
+}
+
+// Max uptime to consider valid (~10 years) to reject boot_time/epoch bugs on some platforms
+const MAX_UPTIME_SECS: u64 = 10 * 365 * 24 * 3600;
+
+/// On macOS/BSD, try "sysctl -n kern.boottime" and parse secs for fallback.
+fn uptime_from_sysctl_kern_boottime() -> Option<u64> {
+    let output = Command::new("sysctl")
+        .args(["-n", "kern.boottime"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    // e.g. "{ sec = 1234567890, usec = 123456 }"
+    let s = String::from_utf8_lossy(&output.stdout);
+    let s = s.trim();
+    let prefix = "sec = ";
+    let start = s.find(prefix).map(|i| i + prefix.len())?;
+    let rest = &s[start..];
+    let end = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(rest.len());
+    let secs_str = &rest[..end];
+    let boot_secs: u64 = secs_str.parse().ok()?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    let uptime = now.saturating_sub(boot_secs);
+    if uptime <= MAX_UPTIME_SECS {
+        Some(uptime)
+    } else {
+        None
+    }
+}
+
+// System uptime: try systemstat first, then sysctl (macOS), then sysinfo, else N/A.
 pub fn system_uptime() {
-    // Init the sys
     let sys = System::new();
-
-    // Match the result of uptime retrieval
-    match sys.uptime() {
-        // Successful uptime retrieval
-        Ok(uptime) => {
-            // Calculate the time
-            let days = uptime.as_secs() / 86400;
-            let hours = (uptime.as_secs() % 86400) / 3600;
-            let minutes = (uptime.as_secs() % 3600) / 60;
-
-            // Output the Data
-            println!(
-                "{} {} {} {} {} {} {}",
-                Green.paint("Uptime:"),
-                Cyan.paint(days.to_string()),
-                Green.paint("Days"),
-                Cyan.paint(hours.to_string()),
-                Green.paint("Hours"),
-                Cyan.paint(minutes.to_string()),
-                Green.paint("Minutes")
-            );
+    let secs = match sys.uptime() {
+        Ok(duration) => {
+            let s = duration.as_secs();
+            if s <= MAX_UPTIME_SECS {
+                Some(s)
+            } else {
+                None
+            }
         }
-        // Error case for uptime retrieval
-        Err(e) => eprintln!("Error getting uptime: {}", e),
+        Err(_) => None,
+    };
+
+    let secs = secs.or_else(uptime_from_sysctl_kern_boottime).or_else(|| {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let boot = SysInfoSystem::boot_time();
+        let mut s = now.saturating_sub(boot);
+        if s == 0 || s > MAX_UPTIME_SECS {
+            s = SysInfoSystem::uptime();
+        }
+        if s > 0 && s <= MAX_UPTIME_SECS {
+            Some(s)
+        } else {
+            None
+        }
+    });
+
+    match secs {
+        Some(s) => print_uptime_seconds(s),
+        None => println!("{} {}", Green.paint("Uptime:"), Cyan.paint("N/A")),
     }
 }
 
@@ -224,6 +281,22 @@ pub fn print_packages() {
 
             if line_count > 2 {
                 package_managers.push(("winget", line_count - 2));
+            }
+        }
+    }
+
+    // Yum
+    if let Ok(output) = Command::new("yum")
+        .args(["list", "installed"])
+            .output()
+    {
+        if output.status.success() {
+            let count = String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .filter(|line| !line.trim().is_empty() && !line.contains("Installed packages"))
+                .count();
+            if count > 0 {
+                package_managers.push(("yum", count));
             }
         }
     }
