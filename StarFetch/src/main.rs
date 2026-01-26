@@ -12,6 +12,9 @@ struct Args {
     /// Show installed package count (brew, apt, winget, etc.)
     #[arg(short, long, alias = "p")]
     packages: bool,
+    /// Show System HardWare information
+    #[arg(short = 'c', long, alias = "c")]
+    hardware: bool,
 }
 
 fn main() {
@@ -20,6 +23,11 @@ fn main() {
     // -p / --packages: only show package count, then exit
     if args.packages {
         system::print_packages();
+        return;
+    }
+
+    if args.hardware {
+        system::print_cpu_info();
         return;
     }
 

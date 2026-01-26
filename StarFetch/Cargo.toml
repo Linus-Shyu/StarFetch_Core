@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 ansi_term = "0.12"
-sysinfo = "0.37.2"
+sysinfo = "0.38.0"
 systemstat = "0.2"
 terminal_size = "0.4.3"
 clap = { version = "4.5", features = ["derive"] }
