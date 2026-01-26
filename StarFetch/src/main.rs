@@ -12,9 +12,12 @@ struct Args {
     /// Show installed package count (brew, apt, winget, etc.)
     #[arg(short, long, alias = "p")]
     packages: bool,
-    /// Show System HardWare information
+    /// Show cpu information
     #[arg(short = 'c', long, alias = "c")]
-    hardware: bool,
+    cpu: bool,
+    /// Show time information
+    #[arg(short = 't', long, alias = "t")]
+    time: bool,
 }
 
 fn main() {
@@ -26,9 +29,16 @@ fn main() {
         return;
     }
 
-    if args.hardware {
+    // -c / --cput: show the cpu information
+    if args.cpu {
         system::print_cpu_info();
         return;
+    }
+
+    // -t / --time: show time information
+    if args.time {
+        system::system_uptime();
+        return ;
     }
 
     // Full interface
