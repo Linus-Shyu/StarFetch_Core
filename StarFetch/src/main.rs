@@ -18,6 +18,18 @@ struct Args {
     /// Show time information
     #[arg(short = 't', long, alias = "t")]
     time: bool,
+    /// Hardware information
+    #[arg(short = 'k', long, alias = "k")]
+    hardware: bool,
+    /// memory information
+    #[arg(short = 'm', long, alias = "m")]
+    memory: bool,
+    /// swap information
+    #[arg(short = 's', long, alias = "s")]
+    swap: bool,
+    /// disk information
+    #[arg(short = 'd', long, alias = "d")]
+    disk: bool,
 }
 
 fn main() {
@@ -29,7 +41,7 @@ fn main() {
         return;
     }
 
-    // -c / --cput: show the cpu information
+    // -c / --cpu: show the cpu information
     if args.cpu {
         system::print_cpu_info();
         return;
@@ -40,6 +52,31 @@ fn main() {
         system::system_uptime();
         return ;
     }
+    
+    // -k / --kernel: show system information
+    if args.hardware {
+        system::print_hardware_info();
+        return ;
+    }
+
+    // -m / --memory: show memory information
+    if args.memory {
+        system::print_memory_info();
+        return ;
+    }
+
+    // -a / --swap:
+    if args.swap {
+        system::print_swap_info();
+        return ;
+    }
+
+    // -d / --disk
+    if args.disk {
+        system::print_disk_info();
+        return ;
+    }
+
 
     // Full interface
     println!("{}", art::adaptive_art());
