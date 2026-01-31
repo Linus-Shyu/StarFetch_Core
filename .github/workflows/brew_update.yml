@@ -1,11 +1,11 @@
-name: Update Homebrew Formula
+name: Auto Update Homebrew Formula
 
 on:
   release:
-    types: [published]
-    
+    types: [published] 
+
 jobs:
-  update-formula:
+  homebrew:
     runs-on: ubuntu-latest
     steps:
       - name: Update Homebrew formula
@@ -13,7 +13,6 @@ jobs:
         with:
           formula-name: starfetch
           homebrew-tap: Linus-Shyu/homebrew-tap
-          base-branch: main
           download-url: https://github.com/Linus-Shyu/StarFetch_Core/archive/refs/tags/${{ github.event.release.tag_name }}.tar.gz
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
