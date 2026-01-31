@@ -6,6 +6,7 @@ mod system;
 use clap::Parser;
 
 #[derive(Parser)]
+#[command(disable_help_flag = true)]
 #[command(name = "starfetch")]
 #[command(about = "A Beauty & fast system information tool", long_about = None)]
 struct Args {
@@ -30,6 +31,8 @@ struct Args {
     /// disk information
     #[arg(short = 'd', long, alias = "d")]
     disk: bool,
+    #[arg(short = 'h', long, alias = "h")]
+    help: bool,
 }
 
 fn main() {
@@ -65,16 +68,23 @@ fn main() {
         return ;
     }
 
-    // -a / --swap:
+    // -s / --swap: show physical RAM information
     if args.swap {
         system::print_swap_info();
         return ;
     }
 
-    // -d / --disk
+    // -d / --disk:show disk information
     if args.disk {
         system::print_disk_info();
         return ;
+    }
+
+    // -h / --help
+    if args.help {
+        system::print_system_help_info();
+        return ;
+
     }
 
 

@@ -434,3 +434,19 @@ pub fn print_disk_info() {
         Cyan.paint((available_space as f64 / 1_073_741_824.0).to_string())
     );
 }
+
+pub fn print_system_help_info() {
+    println!(
+        "{} {} {} {} {} {} {} {}",
+        Green.paint("All command for starfetch \n"),
+        Green.paint("-p / --packages: only show package count, then exit \n"),
+        Green.paint("-c / --cpu: show the cpu information \n"),
+        Green.paint("-t / --time: show time information \n"),
+        Green.paint("-k / --kernel: show system information \n"),
+        Green.paint("-m / --memory: show memory information \n"),
+        Green.paint("-s / --swap: show physical RAM information \n"),
+        Green.paint("-d / --disk: show disk information \n"),
+
+    );
+
+}
