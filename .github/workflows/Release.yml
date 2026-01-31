@@ -3,9 +3,10 @@ name: Release Build
 on:
   push:
     tags:
-      - 'v*.*.*'  # 当推送版本标签时触发，如 v0.2.0
+      - 'v*.*.*'  # 当推送版本标签时触发，如 v0.2.1
 
 jobs:
+  # 第一阶段：多平台编译
   build:
     name: Build for ${{ matrix.os }}
     strategy:
@@ -86,6 +87,7 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: StarFetch/${{ matrix.artifact_name }}.${{ matrix.archive_format }}
 
+  # 第二阶段：创建 GitHub Release
   release:
     name: Create Release
     needs: build
@@ -111,7 +113,6 @@ jobs:
             ## Changes in ${{ steps.tag.outputs.TAG }}
             
             ### Downloads
-            
             - **Linux (x86_64)**: [starfetch-linux-x86_64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-linux-x86_64.tar.gz)
             - **Windows (x86_64)**: [starfetch-windows-x86_64.zip](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-windows-x86_64.zip)
             - **macOS (Intel)**: [starfetch-macos-x86_64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-macos-x86_64.tar.gz)
@@ -122,3 +123,19 @@ jobs:
             artifacts/*/starfetch-*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 第三阶段：全自动更新 Homebrew Tap
+  homebrew:
+    name: Update Homebrew Formula
+    needs: release # 确保 Release 发布成功后再更新
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Homebrew formula
+        uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: starfetch
+          homebrew-tap: Linus-Shyu/homebrew-tap
+          download-url: https://github.com/Linus-Shyu/StarFetch_Core/archive/refs/tags/${{ github.ref_name }}.tar.gz
+        env:
+          # 必须使用你之前生成的具备 repo 权限的个人 Token
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
