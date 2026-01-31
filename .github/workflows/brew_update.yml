@@ -1,11 +1,11 @@
-name: Auto Update Homebrew Formula
+name: Update Homebrew
 
 on:
   release:
-    types: [published] 
+    types: [published] # 关键：只有当 Release 真正发布成功后才触发
 
 jobs:
-  homebrew:
+  update-formula:
     runs-on: ubuntu-latest
     steps:
       - name: Update Homebrew formula
@@ -13,6 +13,7 @@ jobs:
         with:
           formula-name: starfetch
           homebrew-tap: Linus-Shyu/homebrew-tap
+          # 使用触发该流程的 tag 名
           download-url: https://github.com/Linus-Shyu/StarFetch_Core/archive/refs/tags/${{ github.event.release.tag_name }}.tar.gz
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
