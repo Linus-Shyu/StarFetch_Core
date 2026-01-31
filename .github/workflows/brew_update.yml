@@ -1,0 +1,19 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+    
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Homebrew formula
+        uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: starfetch
+          homebrew-tap: Linus-Shyu/homebrew-tap
+          base-branch: main
+          download-url: https://github.com/Linus-Shyu/StarFetch_Core/archive/refs/tags/${{ github.event.release.tag_name }}.tar.gz
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
