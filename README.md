@@ -54,6 +54,13 @@ Used Memory: 10.79 GB
 
 ## 🚀 Installation
 
+### HomeBrew
+
+```bash
+brew tap Linus-Shyu/tap
+brew install starfetch
+```
+
 ### Prerequisites
 
 * **Rust** (latest stable version) - [Install Rust](https://www.rust-lang.org/tools/install)
