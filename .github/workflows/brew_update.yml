@@ -1,11 +1,15 @@
-name: Update Homebrew
+name: Homebrew Update
 
 on:
-  release:
-    types: [published] # 关键：只有当 Release 真正发布成功后才触发
+  workflow_run:
+    workflows: ["Release Build"] # 必须完全对应主角本的 name
+    types:
+      - completed
 
 jobs:
   update-formula:
+    # 只有当主角本成功完成时才运行
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Update Homebrew formula
@@ -13,7 +17,7 @@ jobs:
         with:
           formula-name: starfetch
           homebrew-tap: Linus-Shyu/homebrew-tap
-          # 使用触发该流程的 tag 名
-          download-url: https://github.com/Linus-Shyu/StarFetch_Core/archive/refs/tags/${{ github.event.release.tag_name }}.tar.gz
+          # 自动获取触发主角本的那个标签名（如 v0.2.0）
+          download-url: https://github.com/Linus-Shyu/StarFetch_Core/archive/refs/tags/${{ github.event.workflow_run.head_branch }}.tar.gz
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
