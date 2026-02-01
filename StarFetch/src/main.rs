@@ -33,6 +33,8 @@ struct Args {
     disk: bool,
     #[arg(short = 'h', long, alias = "h")]
     help: bool,
+    #[arg(short = 'a', long, alias = "a")]
+    about: bool,
 }
 
 fn main() {
@@ -85,6 +87,11 @@ fn main() {
         system::print_system_help_info();
         return ;
 
+    }
+    // -a / --about
+    if args.about {
+        system::print_about();
+        return ;
     }
 
 
