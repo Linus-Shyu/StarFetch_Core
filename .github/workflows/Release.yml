@@ -6,6 +6,9 @@ on:
       - 'v*.*.*'
 
 jobs:
+  # ---------------------------------------------------------
+  # 1. 跨平台二进制构建 (tar.gz / zip)
+  # ---------------------------------------------------------
   build:
     name: Build for ${{ matrix.target }}
     strategy:
@@ -64,9 +67,47 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: StarFetch/${{ matrix.artifact_name }}.${{ matrix.archive_format }}
 
+  # ---------------------------------------------------------
+  # 2. 构建 Linux .deb 安装包 (amd64 & arm64)
+  # ---------------------------------------------------------
+  build-deb:
+    name: Build .deb packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (Multi-arch)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
+
+      - name: Install AArch64 linker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Build .deb packages
+        working-directory: StarFetch
+        run: |
+          cargo deb --target x86_64-unknown-linux-gnu
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo deb --target aarch64-unknown-linux-gnu
+
+      - name: Upload .deb artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb-packages
+          path: StarFetch/target/*/debian/*.deb
+
+  # ---------------------------------------------------------
+  # 3. 创建 GitHub Release (包含所有二进制文件和 .deb 包)
+  # ---------------------------------------------------------
   release:
     name: Create GitHub Release
-    needs: build
+    needs: [build, build-deb]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -82,9 +123,41 @@ jobs:
           files: |
             artifacts/*/starfetch-*.tar.gz
             artifacts/*/starfetch-*.zip
+            artifacts/linux-deb-packages/*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ---------------------------------------------------------
+  # 4. 发布到 APT 仓库 (从 Release 产物中推送)
+  # ---------------------------------------------------------
+  apt:
+    name: Push to APT Repository
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download .deb artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-deb-packages
+          path: ./debs
+
+      - name: Set up Python & Cloudsmith CLI
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install cloudsmith-cli
+
+      - name: Push to Cloudsmith
+        run: |
+          for deb in ./debs/*.deb; do
+            cloudsmith push deb starlakeai/starfetch/any-distro/any-version "$deb" \
+            --api-key ${{ secrets.CLOUDSMITH_API_KEY }} \
+            --republish
+          done
+
+  # ---------------------------------------------------------
+  # 5. 更新 Homebrew 和 WinGet
+  # ---------------------------------------------------------
   homebrew:
     name: Update Homebrew
     needs: release
@@ -98,46 +171,6 @@ jobs:
           download-url: https://github.com/Linus-Shyu/StarFetch_Core/releases/download/${{ github.ref_name }}/starfetch-macos-x86_64.tar.gz
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-
-  apt:
-    name: Push to APT Repository
-    needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain (Multi-arch)
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
-
-      - name: Install AArch64 linker
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-
-      - name: Set up Python & Cloudsmith CLI
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - run: pip install cloudsmith-cli
-
-      - name: Install cargo-deb
-        # 回归最稳的方法：直接通过 cargo 安装
-        run: cargo install cargo-deb
-
-      - name: Build .deb packages (amd64 & arm64)
-        working-directory: StarFetch
-        run: |
-          cargo deb --target x86_64-unknown-linux-gnu
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo deb --target aarch64-unknown-linux-gnu
-
-      - name: Push to Cloudsmith
-        run: |
-          cloudsmith push deb starlakeai/starfetch/any-distro/any-version StarFetch/target/*/debian/*.deb \
-          --api-key ${{ secrets.CLOUDSMITH_API_KEY }} \
-          --republish
 
   winget:
     name: Submit to WinGet
