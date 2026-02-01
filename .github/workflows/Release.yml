@@ -97,11 +97,12 @@ jobs:
         with:
           formula-name: starfetch
           homebrew-tap: Linus-Shyu/homebrew-tap
+          # 注意：这里路径引用的是 StarFetch_Core 仓库的 release
           download-url: https://github.com/Linus-Shyu/StarFetch_Core/releases/download/${{ github.ref_name }}/starfetch-macos-x86_64.tar.gz
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
-  # 4. 发布到 APT (使用 Python Pip 强攻，最稳方案)
+  # 4. 发布到 APT (修复了环境配置)
   apt:
     name: Push to APT Repository
     needs: release
@@ -109,17 +110,27 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+
       - name: Install Cloudsmith CLI
         run: pip install cloudsmith-cli
+
       - name: Install cargo-deb
         run: cargo install cargo-deb
+
       - name: Build .deb package
         working-directory: StarFetch
         run: cargo deb --target x86_64-unknown-linux-gnu
+
       - name: Push to Cloudsmith
         run: |
           cloudsmith push deb starlakeai/starfetch/any-distro/any-version StarFetch/target/x86_64-unknown-linux-gnu/debian/*.deb \
