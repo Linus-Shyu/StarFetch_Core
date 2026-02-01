@@ -9,9 +9,9 @@ permissions:
   contents: write
 
 jobs:
-  # ==========================================
-  # Job 1: Linux 构建 (x86 & ARM)
-  # ==========================================
+  # ===================================================
+  # Job 1: Linux 构建 (x86_64 和 ARM64)
+  # ===================================================
   build-linux:
     name: Build Linux (${{ matrix.target }})
     runs-on: ubuntu-latest
@@ -19,15 +19,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 原生 x86_64 (生成 deb)
           - target: x86_64-unknown-linux-gnu
             deb: true
             use_cross: false
-          # ARM64 (生成 deb)
           - target: aarch64-unknown-linux-gnu
             deb: true
             use_cross: true
-          # Musl (静态链接)
           - target: x86_64-unknown-linux-musl
             deb: false
             use_cross: true
@@ -46,13 +43,12 @@ jobs:
             sudo mv cross /usr/local/bin/
           fi
 
-      - name: Build and Collect
+      - name: Build and Collect Assets
         working-directory: .
         run: |
           set -e
           mkdir -p dist
           
-          # 1. 编译
           echo "🔨 Building ${{ matrix.target }}..."
           if [[ "${{ matrix.use_cross }}" == "true" ]]; then
             cross build --release --target ${{ matrix.target }}
@@ -60,22 +56,18 @@ jobs:
             cargo build --release --target ${{ matrix.target }}
           fi
           
-          # 2. 打包 .deb
           if [[ "${{ matrix.deb }}" == "true" ]]; then
             echo "📦 Packaging .deb..."
-            # --no-build: 直接使用刚才编译好的二进制
             cargo deb --target ${{ matrix.target }} --no-build --no-strip
             mv target/${{ matrix.target }}/debian/*.deb dist/
           fi
 
-          # 3. 打包 .tar.gz
           echo "📦 Packaging .tar.gz..."
           name="starfetch-${{ matrix.target }}"
           cd "target/${{ matrix.target }}/release"
           tar -czvf "../../../dist/${name}.tar.gz" starfetch
           cd ../../..
           
-          # 4. 生成 SHA256
           cd dist
           for file in *; do
             sha256sum "$file" | awk '{print $1}' > "$file.sha256"
@@ -86,9 +78,9 @@ jobs:
           name: artifacts-linux-${{ matrix.target }}
           path: dist/*
 
-  # ==========================================
+  # ===================================================
   # Job 2: macOS 构建
-  # ==========================================
+  # ===================================================
   build-macos:
     name: Build macOS
     runs-on: macos-latest
@@ -97,7 +89,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
-      - name: Build and Collect
+      - name: Build and Collect Assets
         run: |
           mkdir -p dist
           for target in x86_64-apple-darwin aarch64-apple-darwin; do
@@ -115,9 +107,9 @@ jobs:
           name: artifacts-macos
           path: dist/*
 
-  # ==========================================
+  # ===================================================
   # Job 3: Windows 构建
-  # ==========================================
+  # ===================================================
   build-windows:
     name: Build Windows
     runs-on: windows-latest
@@ -126,7 +118,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-      - name: Build and Collect
+      - name: Build and Collect Assets
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist
@@ -143,9 +135,9 @@ jobs:
           name: artifacts-windows
           path: dist/*
 
-  # ==========================================
+  # ===================================================
   # Job 4: 发布与分发
-  # ==========================================
+  # ===================================================
   publish:
     name: Publish Release
     needs: [build-linux, build-macos, build-windows]
@@ -153,7 +145,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # 1. 下载所有产物
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -164,7 +155,7 @@ jobs:
         id: get_ver
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      # 2. GitHub Release (上传所有文件)
+      # 1. GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -173,9 +164,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 3. Cloudsmith (APT)
+      # 2. Cloudsmith (APT) - 使用 CLOUDSMITH_API_KEY
       - name: Push to Cloudsmith
-        if: ${{ secrets.CLOUDSMITH_API_KEY != '' }}
+        if: secrets.CLOUDSMITH_API_KEY != ''
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         run: |
@@ -184,14 +175,13 @@ jobs:
             cloudsmith push deb starlakeai/starfetch/any-distro/any-version "$f" || true
           done
 
-      # 4. Homebrew Tap
+      # 3. Homebrew Tap - 使用 HOMEBREW_TAP_TOKEN
       - name: Update Homebrew
-        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        if: secrets.HOMEBREW_TAP_TOKEN != ''
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           V=${{ steps.get_ver.outputs.version }}
-          # 读取文件内容作为哈希值
           ARM_SHA=$(cat release-assets/starfetch-aarch64-apple-darwin.tar.gz.sha256)
           X64_SHA=$(cat release-assets/starfetch-x86_64-apple-darwin.tar.gz.sha256)
           
@@ -224,11 +214,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add . && git commit -m "starfetch v$V" && git push || true
 
-      # 5. Winget
+      # 4. Winget - 这里修改为使用 HOMEBREW_TAP_TOKEN
       - name: Update Winget
-        if: ${{ secrets.WINGET_PKGS_TOKEN != '' }}
+        if: secrets.HOMEBREW_TAP_TOKEN != ''
         env:
-          GH_TOKEN: ${{ secrets.WINGET_PKGS_TOKEN }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           V=${{ steps.get_ver.outputs.version }}
           SHA=$(cat release-assets/starfetch-x86_64-pc-windows-msvc.zip.sha256)
@@ -240,7 +230,6 @@ jobs:
           MANIFEST_DIR="manifests/l/Linus-Shyu/StarFetch/$V"
           mkdir -p "$MANIFEST_DIR"
           
-          # Installer Manifest
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.installer.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
           PackageVersion: $V
@@ -257,7 +246,6 @@ jobs:
           ManifestVersion: 1.4.0
           EOF
           
-          # Locale Manifest
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
           PackageVersion: $V
@@ -270,7 +258,6 @@ jobs:
           ManifestVersion: 1.4.0
           EOF
           
-          # Version Manifest
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.version.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
           PackageVersion: $V
