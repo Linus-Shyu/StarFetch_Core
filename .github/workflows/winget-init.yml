@@ -10,21 +10,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. 使用 GitHub 官方 CLI 稳健下载 Komac
-      - name: Install Komac
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # 自动寻找最新版并下载对应的 linux-musl 包
-          gh release download --repo EdwardG-W/komac --pattern "*x86_64-unknown-linux-musl.tar.gz"
-          tar -xzf *.tar.gz
-          sudo mv komac /usr/local/bin/
-          komac --version
-
-      # 2. 执行首发提交
-      - name: Submit New Package to WinGet
-        run: |
-          komac new StarLakeAI.StarFetch \
-            --version 0.2.3 \
-            --url https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip \
+      # 1. 使用专用的 Komac Action (自动处理安装)
+      - name: Run Komac New
+        uses: michidk/run-komac@v2
+        with:
+          # 执行“创建新包”指令
+          args: >
+            new StarLakeAI.StarFetch
+            --version 0.2.3
+            --url https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip
             --token ${{ secrets.HOMEBREW_TAP_TOKEN }}
