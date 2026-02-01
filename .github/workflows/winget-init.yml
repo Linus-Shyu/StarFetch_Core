@@ -13,7 +13,9 @@ jobs:
       - name: Run Komac New
         uses: michidk/run-komac@v2
         with:
+          # 核心修复：将 --interactive false 放在最前面作为全局参数
           args: >
+            --interactive false
             new
             --version 0.2.3
             --urls https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip
