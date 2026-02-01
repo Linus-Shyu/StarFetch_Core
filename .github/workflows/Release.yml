@@ -6,7 +6,6 @@ on:
       - 'v*.*.*'
 
 jobs:
-  # 1. 跨平台二进制构建
   build:
     name: Build for ${{ matrix.os }}
     strategy:
@@ -78,7 +77,6 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: StarFetch/${{ matrix.artifact_name }}.${{ matrix.archive_format }}
 
-  # 2. 创建 GitHub Release 并上传附件
   release:
     name: Create GitHub Release
     needs: build
@@ -103,7 +101,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 3. 自动更新 Homebrew Tap (复用 HOMEBREW_TAP_TOKEN)
   homebrew:
     name: Update Homebrew Formula
     needs: release
@@ -118,7 +115,6 @@ jobs:
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
-  # 4. 发布到 APT (Cloudsmith)
   apt:
     name: Push to APT Repository
     needs: release
@@ -133,19 +129,16 @@ jobs:
       - name: Build .deb package
         working-directory: StarFetch
         run: cargo deb --target x86_64-unknown-linux-gnu
-      - name: Push to Cloudsmith
-        uses: cloudsmith-io/cloudsmith-action@v1
+      # 核心修正：使用官方的 Setup Action 安装 CLI
+      - name: Setup Cloudsmith CLI
+        uses: cloudsmith-io/setup-cloudsmith@v1
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-          command: push
-          format: deb
-          owner: starlakeai
-          repo: starfetch
-          distro: any-distro
-          release: any-version
-          file: StarFetch/target/x86_64-unknown-linux-gnu/debian/*.deb
+      # 核心修正：执行推送命令
+      - name: Push to Cloudsmith
+        run: |
+          cloudsmith push deb starlakeai/starfetch/any-distro/any-version StarFetch/target/x86_64-unknown-linux-gnu/debian/*.deb
 
-  # 5. 发布到 WinGet (复用 HOMEBREW_TAP_TOKEN)
   winget:
     name: Submit to WinGet
     needs: release
