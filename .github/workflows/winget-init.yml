@@ -14,13 +14,13 @@ jobs:
         uses: michidk/run-komac@v2
         with:
           args: >
-            new StarLakeAI.StarFetch
+            new
             --version 0.2.3
             --urls https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip
             --token ${{ secrets.HOMEBREW_TAP_TOKEN }}
-            --submit
-            --interactive false
             --publisher "Star Lake AI"
             --name "StarFetch"
             --description "A fast and beautiful system information fetch tool written in Rust."
             --license "MIT"
+            --submit
+            StarLakeAI.StarFetch
