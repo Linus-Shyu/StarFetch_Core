@@ -1,15 +1,27 @@
-name: WinGet First Submission
+name: WinGet First Submission (Manual)
 
 on:
   workflow_dispatch: # 允许你手动点击按钮触发
 
 jobs:
-  komac:
+  submit:
     runs-on: ubuntu-latest
     steps:
-      - name: Submit to WinGet via Komac
-        uses: xet7/komac-action@v1 # 使用 Komac 动作
-        with:
-          # 你的 Release 下载地址
-          args: update StarLakeAI.StarFetch --version 0.2.3 --urls https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip
-          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. 直接下载并安装 Komac (用 Rust 写的跨平台 WinGet 提交工具)
+      - name: Install Komac
+        run: |
+          curl -L https://github.com/EdwardG-W/komac/releases/latest/download/komac-x86_64-unknown-linux-musl.tar.gz | tar -xz
+          sudo mv komac /usr/local/bin/
+          komac --version
+
+      # 2. 执行首发提交
+      # 这会生成清单、验证哈希并直接给微软提交 PR
+      - name: Submit New Package to WinGet
+        run: |
+          komac new StarLakeAI.StarFetch \
+            --version 0.2.3 \
+            --url https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip \
+            --token ${{ secrets.HOMEBREW_TAP_TOKEN }}
