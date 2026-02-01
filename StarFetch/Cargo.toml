@@ -9,3 +9,20 @@ sysinfo = "0.38.0"
 systemstat = "0.2"
 terminal_size = "0.4.3"
 clap = { version = "4.5", features = ["derive"] }
+
+[package.metadata.deb]
+name = "starfetch"
+maintainer = "Linus Shyu <0x11@linusshyu.dev>"
+section = "utils"
+priority = "optional"
+description = "A fast and stylish system information fetch tool."
+extended-description = """
+StarFetch is a high-performance system information tool written in Rust.
+Part of the Star Lake AI ecosystem, designed for speed and aesthetic.
+"""
+
+assets = [
+    ["target/release/starfetch", "/usr/bin/starfetch", "755"],
+]
+
+depends = "$auto"
