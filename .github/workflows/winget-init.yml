@@ -12,16 +12,16 @@ jobs:
 
       - name: Run Komac New
         uses: michidk/run-komac@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         with:
-          # 这次一次性喂饱它所有的必填字段，杜绝交互
           args: >
             new
+            StarLakeAI.StarFetch
             --publisher "Star Lake AI"
-            --name "StarFetch"
-            --description "A fast and beautiful system information fetch tool written in Rust."
+            --package-name "StarFetch"
+            --short-description "A fast and beautiful system information fetch tool written in Rust."
             --license "MIT"
             --urls "https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip"
             --version 0.2.3
-            --token ${{ secrets.HOMEBREW_TAP_TOKEN }}
             --submit
-            StarLakeAI.StarFetch
