@@ -1,7 +1,7 @@
 name: WinGet Initial Submission
 
 on:
-  workflow_dispatch: # 手动触发
+  workflow_dispatch:
 
 jobs:
   submit:
@@ -13,21 +13,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install expect (for unbuffer)
-        run: sudo apt-get update && sudo apt-get install -y expect
-
-      - name: Run Komac New
+      - name: Run Komac New (Direct EXE)
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
-          # 针对你的 zip 文件名进行提交
-          # printf 里的空格是为了在 komac 弹出列表时选中 starfetch.exe
-          printf ' \n\n\n\n' | unbuffer -p komac new StarLakeAI.StarFetch \
+          # 只要后缀是 .exe，komac 就会自动识别为 Portable 模式并直接提交
+          komac new StarLakeAI.StarFetch \
             --publisher "Star Lake AI" \
             --package-name "StarFetch" \
             --license "MIT" \
-            --urls "https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.2/starfetch-windows-x86_64.zip" \
+            --urls "https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.2/starfetch.exe" \
             --version 0.2.2 \
-            --package-locale en-US \
-            --submit
+            --submit \
+            --interactive-mode never
