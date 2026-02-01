@@ -1,161 +1,109 @@
-# StarFetch
+# StarFetch ⭐
 
-A beautiful system information tool written in Rust, inspired by neofetch. StarFetch displays your system information with an elegant ASCII art banner.
+[![Star History Chart](https://api.star-history.com/svg?repos=Linus-Shyu/StarFetch_Core&type=date&legend=top-left)](https://www.star-history.com/#Linus-Shyu/StarFetch_Core&type=date&legend=top-left)
 
-## Features
+[![Written in Rust](https://img.shields.io/badge/Written%20in-Rust-CE412B?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Mascot](https://img.shields.io/badge/Mascot-Ferris-orange?style=for-the-badge)](https://rustacean.net/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-- 🎨 **Adaptive ASCII Art**: Automatically selects between full and compact ASCII art based on terminal width
-- 🖥️ **System Information**: Displays hostname, OS, kernel version, and uptime
-- 🔗 **Clickable Links**: Developer name with clickable hyperlink support
-- 🌈 **Colorful Output**: Beautiful colored terminal output using ANSI colors
-- ⚡ **Fast & Lightweight**: Written in Rust for optimal performance
+A beautiful and fast system information tool written in Rust, inspired by neofetch. StarFetch displays your system information with elegant ASCII art and smart terminal adaptation.
 
-## Screenshot
+## 💡 Inspiration & Encouragement
 
-```
-_____/\\\\\\\\\\\_______________________________________________/\\\\\\\\\\\\\\\_____________________________________________/\\\_________
- ___/\\\/////////\\\____________________________________________\/\\\///////////_____________________________________________\/\\\_________
-  __\//\\\______\///______/\\\___________________________________\/\\\________________________________/\\\____________________\/\\\_________
-   ___\////\\\__________/\\\\\\\\\\\__/\\\\\\\\\_____/\\/\\\\\\\__\/\\\\\\\\\\\_________/\\\\\\\\___/\\\\\\\\\\\_____/\\\\\\\\_\/\\\_________
-    ______\////\\\______\////\\\////__\////////\\\___\/\\\/////\\\_\/\\\///////________/\\\/////\\\_\////\\\////____/\\\//////__\/\\\\\\\\\\__
-     _________\////\\\______\/\\\________/\\\\\\\\\\__\/\\\___\///__\/\\\______________/\\\\\\\\\\\_____\/\\\_______/\\\_________\/\\\/////\\\_
-      __/\\\______\//\\\_____\/\\\_/\\___/\\\/////\\\__\/\\\_________\/\\\_____________\//\\///////______\/\\\_/\\__\//\\\________\/\\\___\/\\\_
-       _\///\\\\\\\\\\\/______\//\\\\\___\//\\\\\\\\/\\_\/\\\_________\/\\\______________\//\\\\\\\\\\____\//\\\\\____\///\\\\\\\\_\/\\\___\/\\\_
-        ___\///////////_________\/////_____\////////\//__\///__________\///________________\//////////______\/////_______\////////__\///____\///__
+StarFetch was born from a deep respect for the legacy of command-line tools. We are incredibly honored to have received these words of encouragement from **Dylan Araps**, the creator of [neofetch](https://github.com/dylanaraps/neofetch):
 
+> "Starfetch looks cool. It looks like a lot of care has gone into it. ... I wish you all the best and I hope you succeed in your goals."
+> — **Dylan Araps**
+
+His reminder that "writing software is fun but can also be very draining" and to "look after yourselves" is a core value we carry forward in this project.
+
+---
+
+## ✨ Features
+
+- 🎨 **Adaptive ASCII Art** - Automatically adjusts display based on terminal width.
+- 🖥️ **Comprehensive System Info** - Hostname, OS, kernel, uptime, CPU, memory, and packages.
+- 🔗 **Smart Hyperlinks** - Clickable developer links with terminal detection.
+- 🌈 **Beautiful Colors** - ANSI color support for elegant terminal output.
+- ⚡ **Lightning Fast** - Written in Rust for optimal performance.
+- 🔧 **Cross-Platform** - Works on macOS, Linux, and Windows.
+
+## 📸 Screenshot
+
+```text
+    ╔════════════════════════════════╗
+    ║   ★  STARFETCH  ★            ║
+    ╚════════════════════════════════╝
+    
 Developed by Linus Shyu
 
 hostname
 --------
 OS: macOS
 Kernel: 25.2.0
-Uptime: 2 Days 5 Hours 30 Minutes
+Uptime: 6 Days 14 Hours 32 Minutes
+Packages: 30 (brew)
+CPU Cores: 10
+CPU Brand: Apple M5
+CPU Frequency: 4608 MHz
+CPU Usage: 10.24%
+Total Memory: 16 GB
+Used Memory: 10.79 GB
+
 ```
 
-## Installation
+## 🚀 Installation
+
+### HomeBrew
+
+```bash
+brew tap Linus-Shyu/tap
+brew install starfetch
+```
 
 ### Prerequisites
 
-- Rust (latest stable version)
-- Cargo (comes with Rust)
+* **Rust** (latest stable version) - [Install Rust](https://www.rust-lang.org/tools/install)
+* **Cargo** (comes with Rust)
 
 ### Build from Source
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/Linus-Shyu/StarFetch_Core.git
+git clone [https://github.com/Linus-Shyu/StarFetch_Core.git](https://github.com/Linus-Shyu/StarFetch_Core.git)
 cd StarFetch_Core/StarFetch
-```
-
-2. Build the project:
-```bash
 cargo build --release
+
 ```
 
-3. Run the executable:
-```bash
-cargo run --release
-```
+### Install Globally
 
-Or install it globally:
 ```bash
 cargo install --path .
-```
-
-## Usage
-
-Simply run:
-```bash
-starfetch
-```
-
-Or if you built it locally:
-```bash
-cargo run
-```
-
-## Project Structure
 
 ```
-StarFetch/
-├── src/
-│   ├── main.rs      # Main entry point
-│   ├── art.rs       # ASCII art generation and terminal width detection
-│   ├── system.rs    # System information retrieval
-│   └── hyperlink.rs # Hyperlink and text styling utilities
-├── Cargo.toml       # Project dependencies and metadata
-└── README.md        # This file
-```
 
-## Dependencies
+## 📦 Dependencies
 
-- `ansi_term` - Terminal colors and styling
-- `sysinfo` - System information retrieval
-- `systemstat` - System statistics (uptime, etc.)
-- `terminal_size` - Terminal width detection
+* `ansi_term` - Terminal colors and styling.
+* `sysinfo` - Cross-platform system info.
+* `systemstat` - System statistics (uptime, etc.).
+* `terminal_size` - Terminal width detection.
 
-## Features in Detail
+## 👥 Authors
 
-### Adaptive ASCII Art
+* **Linus Shyu** ([@Linus-Shyu](https://github.com/Linus-Shyu))
+* **Dylan Su** ([@xs10l3](https://github.com/xs10l3))
 
-StarFetch automatically detects your terminal width:
-- **Width ≥ 120 characters**: Displays full "STARFETCH" ASCII art
-- **Width < 120 characters**: Displays compact box art
-- **Unable to detect**: Falls back to full ASCII art
+## 🙏 Acknowledgments
 
-### System Information
+* **Dylan Araps** - For the original inspiration and kind words.
+* **Rust Foundation** - For guidance on trademark compliance. We use **Ferris the Crab** (the unofficial-official mascot) to represent our love for the Rust community. 🦀
+* **The Open Source Community** - For the amazing crates that make this project possible.
 
-Displays:
-- **Hostname**: Your system's hostname
-- **OS**: Operating system name
-- **Kernel**: Kernel version
-- **Uptime**: System uptime in days, hours, and minutes
+## 📄 License
 
-### Clickable Links
+This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
 
-The developer name is displayed as a clickable hyperlink (supported in modern terminals like iTerm2, Windows Terminal, etc.)
+---
 
-## Development
-
-### Format Code
-
-```bash
-cargo fmt
-```
-
-### Check for Issues
-
-```bash
-cargo check
-```
-
-### Build
-
-```bash
-cargo build
-```
-
-### Run Tests
-
-```bash
-cargo test
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-See [LICENSE](LICENSE) file for details.
-
-## Author
-
-**Linus Shyu**
-
-- GitHub: [@Linus-Shyu](https://github.com/Linus-Shyu)
-
-## Acknowledgments
-
-- Inspired by [neofetch](https://github.com/dylanaraps/neofetch)
-- Built with ❤️ using Rust
+⭐ If you find StarFetch useful, please consider giving it a star on GitHub!

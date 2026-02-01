@@ -1,0 +1,46 @@
+name: WinGet First Submission (Manual)
+
+# 若 CI 运行失败（komac 需要 TTY），请在本地终端运行下方命令完成首次提交。
+on:
+  workflow_dispatch:
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Komac
+        uses: cargo-bins/cargo-binstall@main
+      - run: cargo binstall komac --no-confirm
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Install expect (for unbuffer)
+        run: sudo apt-get update && sudo apt-get install -y expect
+
+      - name: Run Komac New (with pseudo-TTY)
+        shell: script -q -e -c "bash {0}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          KOMAC_FORK_OWNER: ${{ github.repository_owner }}
+        run: |
+          # unbuffer 提供伪 TTY；管道输入自动应答 zip 嵌套选择（空格选中 + 回车确认）
+          # 若后续有更多提示，可追加更多回车
+          printf ' \n\n\n\n\n' | unbuffer -p komac new StarLakeAI.StarFetch \
+            --publisher "Star Lake AI" \
+            --package-name "StarFetch" \
+            --short-description "A fast and beautiful system information fetch tool written in Rust." \
+            --license "MIT" \
+            --urls "https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip" \
+            --version 0.2.3 \
+            --package-locale en-US \
+            --skip-pr-check \
+            --submit
+
+      - name: Fallback - Manual instructions
+        if: failure()
+        run: |
+          echo "::notice::若 CI 报 TTY 错误，请在本地运行:"
+          echo "  komac new StarLakeAI.StarFetch --publisher \"Star Lake AI\" --package-name \"StarFetch\" --short-description \"A fast and beautiful system information fetch tool written in Rust.\" --license \"MIT\" --urls \"https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip\" --version 0.2.3 --package-locale en-US --submit"
