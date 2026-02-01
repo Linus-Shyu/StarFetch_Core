@@ -1,11 +1,15 @@
 name: Release Build
 
+# 触发条件：当推送格式为 v*.*.* 的标签时触发
 on:
   push:
     tags:
       - 'v*.*.*'
 
 jobs:
+  # ---------------------------------------------------------
+  # 1. 跨平台二进制构建
+  # ---------------------------------------------------------
   build:
     name: Build for ${{ matrix.target }}
     strategy:
@@ -36,28 +40,37 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - working-directory: StarFetch
+      - name: Build release binary
+        working-directory: StarFetch
         run: cargo build --release --target ${{ matrix.target }}
 
-      - if: runner.os != 'Windows'
+      - name: Create archive (Unix)
+        if: runner.os != 'Windows'
         working-directory: StarFetch/target/${{ matrix.target }}/release
         run: tar czf ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }} ${{ matrix.binary_name }}
 
-      - if: runner.os == 'Windows'
+      - name: Create archive (Windows)
+        if: runner.os == 'Windows'
         working-directory: StarFetch/target/${{ matrix.target }}/release
         run: Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: StarFetch/${{ matrix.artifact_name }}.${{ matrix.archive_format }}
 
+  # ---------------------------------------------------------
+  # 2. 创建 GitHub Release 并上传附件
+  # ---------------------------------------------------------
   release:
     name: Create GitHub Release
     needs: build
@@ -65,10 +78,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-      - uses: softprops/action-gh-release@v1
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/*/starfetch-*.tar.gz
@@ -76,13 +92,80 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ---------------------------------------------------------
+  # 3. 自动更新 Homebrew Formula
+  # ---------------------------------------------------------
   homebrew:
     name: Update Homebrew
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - uses: mislav/bump-homebrew-formula-action@v3
+      - name: Update Homebrew formula
+        uses: mislav/bump-homebrew-formula-action@v3
         with:
           formula-name: starfetch
           homebrew-tap: Linus-Shyu/homebrew-tap
-          download-
+          # 默认使用 macOS x86_64 的包作为 Formula 源
+          download-url: https://github.com/Linus-Shyu/StarFetch_Core/releases/download/${{ github.ref_name }}/starfetch-macos-x86_64.tar.gz
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+  # ---------------------------------------------------------
+  # 4. 构建并推送到 APT 仓库 (Cloudsmith)
+  # ---------------------------------------------------------
+  apt:
+    name: Push to APT Repository
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain (Multi-arch)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
+
+      - name: Install AArch64 linker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Set up Python & Cloudsmith CLI
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install cloudsmith-cli
+
+      - name: Install cargo-deb
+        run: curl -LsSf https://github.com/kornelski/cargo-deb/releases/latest/download/cargo-deb-x86_64-unknown-linux-gnu.tar.gz | tar xz -C /usr/local/bin
+
+      - name: Build .deb packages (amd64 & arm64)
+        working-directory: StarFetch
+        run: |
+          # 构建 x86_64 (amd64) 版本
+          cargo deb --target x86_64-unknown-linux-gnu
+          # 交叉编译 aarch64 (arm64) 版本
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo deb --target aarch64-unknown-linux-gnu
+
+      - name: Push to Cloudsmith
+        run: |
+          # 使用 --republish 强制覆盖同版本，解决同步冲突
+          cloudsmith push deb starlakeai/starfetch/any-distro/any-version StarFetch/target/*/debian/*.deb \
+          --api-key ${{ secrets.CLOUDSMITH_API_KEY }} \
+          --republish
+
+  # ---------------------------------------------------------
+  # 5. 提交到 WinGet 官方仓库
+  # ---------------------------------------------------------
+  winget:
+    name: Submit to WinGet
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Submit to WinGet
+        uses: vedantmgoyal2009/winget-releaser@v2
+        with:
+          identifier: StarLakeAI.StarFetch
+          installers-regex: '.*-windows-x86_64\.zip$'
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
