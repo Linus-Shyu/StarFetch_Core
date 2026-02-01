@@ -6,8 +6,9 @@ on:
       - 'v*.*.*'
 
 jobs:
+  # 1. 跨平台构建 (Linux, Windows, macOS)
   build:
-    name: Build for ${{ matrix.os }}
+    name: Build for ${{ matrix.target }}
     strategy:
       fail-fast: false
       matrix:
@@ -44,32 +45,19 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            StarFetch/target/
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Build release binary
         working-directory: StarFetch
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Create archive (Linux/macOS)
+      - name: Create archive (Unix)
         if: runner.os != 'Windows'
         working-directory: StarFetch/target/${{ matrix.target }}/release
         run: tar czf ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }} ${{ matrix.binary_name }}
-        shell: bash
 
       - name: Create archive (Windows)
         if: runner.os == 'Windows'
         working-directory: StarFetch/target/${{ matrix.target }}/release
         run: Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }}
-        shell: pwsh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -77,6 +65,7 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: StarFetch/${{ matrix.artifact_name }}.${{ matrix.archive_format }}
 
+  # 2. 创建 GitHub Release
   release:
     name: Create GitHub Release
     needs: build
@@ -88,21 +77,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-      - name: Extract tag name
-        id: tag
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Release ${{ steps.tag.outputs.TAG }}
           files: |
             artifacts/*/starfetch-*.tar.gz
             artifacts/*/starfetch-*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # 3. 发布到 Homebrew
   homebrew:
-    name: Update Homebrew Formula
+    name: Update Homebrew
     needs: release
     runs-on: ubuntu-latest
     steps:
@@ -115,6 +101,7 @@ jobs:
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
+  # 4. 发布到 APT (使用 Python Pip 强攻，最稳方案)
   apt:
     name: Push to APT Repository
     needs: release
@@ -122,30 +109,30 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install Cloudsmith CLI
+        run: pip install cloudsmith-cli
       - name: Install cargo-deb
         run: cargo install cargo-deb
       - name: Build .deb package
         working-directory: StarFetch
         run: cargo deb --target x86_64-unknown-linux-gnu
-      # 核心修正：使用官方的 Setup Action 安装 CLI
-      - name: Setup Cloudsmith CLI
-        uses: cloudsmith-io/setup-cloudsmith@v1
-        with:
-          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-      # 核心修正：执行推送命令
       - name: Push to Cloudsmith
         run: |
-          cloudsmith push deb starlakeai/starfetch/any-distro/any-version StarFetch/target/x86_64-unknown-linux-gnu/debian/*.deb
+          cloudsmith push deb starlakeai/starfetch/any-distro/any-version StarFetch/target/x86_64-unknown-linux-gnu/debian/*.deb \
+          --api-key ${{ secrets.CLOUDSMITH_API_KEY }}
 
+  # 5. 发布到 WinGet
   winget:
     name: Submit to WinGet
     needs: release
     runs-on: ubuntu-latest
     steps:
       - name: Submit to WinGet
-        uses: vedantmgoyal9/winget-releaser@main
+        uses: vedantmgoyal2009/winget-releaser@v2
         with:
           identifier: StarLakeAI.StarFetch
           installers-regex: '.*-windows-x86_64\.zip$'
