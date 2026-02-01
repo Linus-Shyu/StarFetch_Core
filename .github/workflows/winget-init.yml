@@ -1,0 +1,15 @@
+name: WinGet First Submission
+
+on:
+  workflow_dispatch: # 允许你手动点击按钮触发
+
+jobs:
+  komac:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Submit to WinGet via Komac
+        uses: xet7/komac-action@v1 # 使用 Komac 动作
+        with:
+          # 你的 Release 下载地址
+          args: update StarLakeAI.StarFetch --version 0.2.3 --urls https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
