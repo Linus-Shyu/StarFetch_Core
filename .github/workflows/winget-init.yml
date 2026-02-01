@@ -10,13 +10,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. 使用专用的 Komac Action (自动处理安装)
       - name: Run Komac New
         uses: michidk/run-komac@v2
         with:
-          # 执行“创建新包”指令
           args: >
             new StarLakeAI.StarFetch
             --version 0.2.3
-            --url https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip
+            --urls https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-windows-x86_64.zip
             --token ${{ secrets.HOMEBREW_TAP_TOKEN }}
