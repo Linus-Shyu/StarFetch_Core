@@ -1,10 +1,12 @@
 [package]
 name = "starfetch"
-version = "0.2.2"
+version = "0.2.3"  # 发布新版时记得改这里
 edition = "2021"
 description = "A fast and stylish system information fetch tool."
 authors = ["Linus Shyu <0x11@linusshyu.dev>"]
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/Linus-Shyu/StarFetch_Core"
 
 [dependencies]
 ansi_term = "0.12"
@@ -13,6 +15,7 @@ systemstat = "0.2"
 terminal_size = "0.4.3"
 clap = { version = "4.5", features = ["derive"] }
 
+# === Debian/Ubuntu 打包配置 ===
 [package.metadata.deb]
 maintainer = "Linus Shyu <0x11@linusshyu.dev>"
 section = "utils"
@@ -21,9 +24,11 @@ extended-description = """
 StarFetch is a high-performance system information tool written in Rust.
 Part of the Star Lake AI ecosystem, designed for speed and aesthetic.
 """
+license-file = ["LICENSE", "4"] # 确保根目录有 LICENSE 文件
 
+# 关键修改：只保留文档资源，二进制文件让工具自动抓取
 assets = [
-    ["target/release/starfetch", "/usr/bin/starfetch", "755"],
+    ["README.md", "usr/share/doc/starfetch/README", "644"],
 ]
 
 depends = "$auto"

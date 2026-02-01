@@ -6,9 +6,13 @@ mod system;
 use clap::Parser;
 
 #[derive(Parser)]
-#[command(disable_help_flag = true)]
-#[command(name = "starfetch")]
-#[command(about = "A Beauty & fast system information tool", long_about = None)]
+#[command(
+    disable_help_flag = true,
+    name = "starfetch",
+    about = "A Beauty & fast system information tool",
+    long_about = None,
+    version
+)]
 struct Args {
     /// Show installed package count (brew, apt, winget, etc.)
     #[arg(short, long, alias = "p")]
