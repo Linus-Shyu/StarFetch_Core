@@ -23,7 +23,7 @@ Part of the Star Lake AI ecosystem, designed for speed and aesthetic.
 """
 
 assets = [
-    ["target/x86_64-unknown-linux-gnu/release/starfetch", "/usr/bin/starfetch", "755"],
+    ["target/release/starfetch", "/usr/bin/starfetch", "755"],
 ]
 
 depends = "$auto"
