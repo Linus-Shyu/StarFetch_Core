@@ -18,7 +18,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run Komac New (with pseudo-TTY)
-        shell: script -q -e -c "bash -c '{0}'"
+        shell: script -q -e -c "bash {0}"
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           KOMAC_FORK_OWNER: ${{ github.repository_owner }}
