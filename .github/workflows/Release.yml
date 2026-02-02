@@ -235,4 +235,54 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add . && git commit -m "starfetch v$V" && git push || true
 
-      # 4. Winget 由 winget-releaser（Komac）在 release 发布后自动提 PR，见 .github/workflows/winget-publish.yml
+      # 4. Winget - 用仓库内 komac 生成的 manifest 模板（winget/manifests/.../0.2.3/）替换版本/URL/SHA/日期后提 PR
+      - name: Update Winget (manifest from repo)
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set. Skipping Winget PR."
+            exit 0
+          fi
+          V=${{ steps.get_ver.outputs.version }}
+          RELEASE_DATE=$(date +%Y-%m-%d)
+          URL="https://github.com/${{ github.repository }}/releases/download/v$V/starfetch-x86_64-pc-windows-msvc.zip"
+          SHA=$(cat release-assets/starfetch-x86_64-pc-windows-msvc.zip.sha256 2>/dev/null || true)
+          if [ -z "$SHA" ]; then
+            echo "::warning::Windows zip sha256 not found. Skipping Winget PR."
+            exit 0
+          fi
+          SHA_UPPER=$(echo "$SHA" | tr 'a-f' 'A-F')
+          TEMPLATE_DIR="winget/manifests/l/Linus-Shyu/StarFetch/0.2.3"
+          if [ ! -d "$TEMPLATE_DIR" ]; then
+            echo "::warning::Winget template $TEMPLATE_DIR not found. Skipping Winget PR."
+            exit 0
+          fi
+          git clone --depth 1 https://github.com/microsoft/winget-pkgs.git /tmp/winget-pkgs
+          cd /tmp/winget-pkgs
+          git remote add fork "https://x-access-token:${GH_TOKEN}@github.com/Linus-Shyu/winget-pkgs.git"
+          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || DEFAULT_BRANCH="master"
+          BRANCH="starfetch-v$V"
+          git checkout -b "$BRANCH" "origin/$DEFAULT_BRANCH"
+          MANIFEST_DIR="manifests/l/Linus-Shyu/StarFetch/$V"
+          mkdir -p "$MANIFEST_DIR"
+          REPO_ROOT="${{ github.workspace }}"
+          sed -e "s/0\.2\.3/$V/g" \
+              -e "s|https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-x86_64-pc-windows-msvc.zip|$URL|g" \
+              -e "s/4D8E1F14F4877A7400E5CD6DBA5912B93B616DD905A5DC820C8157FC936926FA/$SHA_UPPER/g" \
+              -e "s/2026-02-02/$RELEASE_DATE/g" \
+              "$REPO_ROOT/$TEMPLATE_DIR/Linus-Shyu.StarFetch.installer.yaml" > "$MANIFEST_DIR/Linus-Shyu.StarFetch.installer.yaml"
+          sed -e "s/0\.2\.3/$V/g" \
+              -e "s|/v0.2.3|/v$V|g" \
+              "$REPO_ROOT/$TEMPLATE_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml" > "$MANIFEST_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml"
+          sed -e "s/0\.2\.3/$V/g" \
+              "$REPO_ROOT/$TEMPLATE_DIR/Linus-Shyu.StarFetch.version.yaml" > "$MANIFEST_DIR/Linus-Shyu.StarFetch.version.yaml"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add . && git diff --staged --quiet || git commit -m "Add Linus-Shyu.StarFetch $V"
+          git push fork "$BRANCH" || true
+          export GH_TOKEN
+          gh pr create --repo microsoft/winget-pkgs --head "Linus-Shyu:$BRANCH" --base "$DEFAULT_BRANCH" \
+            --title "Add Linus-Shyu.StarFetch $V" \
+            --body "Automated PR from [StarFetch_Core](https://github.com/${{ github.repository }}) release [v$V](https://github.com/${{ github.repository }}/releases/tag/v$V). Manifests generated from komac template (1.12.0)." \
+            || echo "::notice::PR may already exist or creation failed."
