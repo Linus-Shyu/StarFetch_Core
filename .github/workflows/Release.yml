@@ -44,10 +44,13 @@ jobs:
           fi
 
       - name: Build and Collect Assets
-        working-directory: .
+        working-directory: StarFetch
         run: |
           set -e
           mkdir -p dist
+          
+          # 从父目录复制 LICENSE 和 README.md 用于 .deb 打包
+          cp ../LICENSE ../README.md .
           
           echo "🔨 Building ${{ matrix.target }}..."
           if [[ "${{ matrix.use_cross }}" == "true" ]]; then
@@ -76,7 +79,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: artifacts-linux-${{ matrix.target }}
-          path: dist/*
+          path: StarFetch/dist/*
 
   # ===================================================
   # Job 2: macOS 构建
@@ -90,6 +93,7 @@ jobs:
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
       - name: Build and Collect Assets
+        working-directory: StarFetch
         run: |
           mkdir -p dist
           for target in x86_64-apple-darwin aarch64-apple-darwin; do
@@ -105,7 +109,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: artifacts-macos
-          path: dist/*
+          path: StarFetch/dist/*
 
   # ===================================================
   # Job 3: Windows 构建
@@ -120,6 +124,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
       - name: Build and Collect Assets
         shell: pwsh
+        working-directory: StarFetch
         run: |
           New-Item -ItemType Directory -Force -Path dist
           cargo build --release --target x86_64-pc-windows-msvc
@@ -133,7 +138,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: artifacts-windows
-          path: dist/*
+          path: StarFetch/dist/*
 
   # ===================================================
   # Job 4: 发布与分发
