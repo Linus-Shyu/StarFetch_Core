@@ -49,6 +49,9 @@ jobs:
           set -e
           mkdir -p dist
           
+          # 从父目录复制 LICENSE 用于 .deb 打包
+          cp ../LICENSE .
+          
           echo "🔨 Building ${{ matrix.target }}..."
           if [[ "${{ matrix.use_cross }}" == "true" ]]; then
             cross build --release --target ${{ matrix.target }}
