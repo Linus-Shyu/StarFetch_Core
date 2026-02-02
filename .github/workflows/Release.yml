@@ -49,6 +49,7 @@ jobs:
         working-directory: StarFetch
         run: |
           set -e
+          cd "${GITHUB_WORKSPACE}/StarFetch"
           mkdir -p dist
           # 从父目录复制 LICENSE 和 README.md 用于 .deb 打包
           cp ../LICENSE ../README.md .
@@ -90,6 +91,7 @@ jobs:
       - name: Build and Collect Assets
         working-directory: StarFetch
         run: |
+          cd "${GITHUB_WORKSPACE}/StarFetch"
           mkdir -p dist
           for target in x86_64-apple-darwin aarch64-apple-darwin; do
             cargo build --release --target "$target"
@@ -253,14 +255,16 @@ jobs:
           MANIFEST_DIR="manifests/l/Linus-Shyu/StarFetch/$V"
           mkdir -p "$MANIFEST_DIR"
           
+          SHA_UPPER=$(echo "$SHA" | tr 'a-f' 'A-F')
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.installer.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
           PackageVersion: $V
           InstallerType: zip
+          Scope: user
           Installers:
             - Architecture: x64
               InstallerUrl: $URL
-              InstallerSha256: $SHA
+              InstallerSha256: $SHA_UPPER
               NestedInstallerType: portable
               NestedInstallerFiles:
                 - RelativeFilePath: starfetch.exe
@@ -321,14 +325,16 @@ jobs:
           git checkout -b "$BRANCH" "origin/$DEFAULT_BRANCH"
           MANIFEST_DIR="manifests/l/Linus-Shyu/StarFetch/$V"
           mkdir -p "$MANIFEST_DIR"
+          SHA_UPPER=$(echo "$SHA" | tr 'a-f' 'A-F')
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.installer.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
           PackageVersion: $V
           InstallerType: zip
+          Scope: user
           Installers:
             - Architecture: x64
               InstallerUrl: $URL
-              InstallerSha256: $SHA
+              InstallerSha256: $SHA_UPPER
               NestedInstallerType: portable
               NestedInstallerFiles:
                 - RelativeFilePath: starfetch.exe
