@@ -1,6 +1,6 @@
 [package]
 name = "starfetch"
-version = "0.2.3" 
+version = "0.2.3"
 edition = "2021"
 description = "A fast and stylish system information fetch tool."
 authors = ["Linus Shyu <0x11@linusshyu.dev>"]

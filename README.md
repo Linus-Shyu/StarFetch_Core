@@ -74,7 +74,7 @@ brew install starfetch
 
 ### Winget (Windows)
 
-```bash
+```powershell
 winget install Linus-Shyu.StarFetch
 ```
 
@@ -86,12 +86,12 @@ winget install Linus-Shyu.StarFetch
 
 ```bash
 # Linux / macOS / BSD
-curl -fsSL https://raw.githubusercontent.com/Linus-Shyu/StarFetch_Core/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Linus-Shyu/StarFetch_Core/master/install.sh | bash
 ```
 
 ```powershell
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/Linus-Shyu/StarFetch_Core/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/Linus-Shyu/StarFetch_Core/master/install.ps1 | iex
 ```
 
 ### Prerequisites
@@ -102,7 +102,7 @@ irm https://raw.githubusercontent.com/Linus-Shyu/StarFetch_Core/main/install.ps1
 ### Build from Source
 
 ```bash
-git clone [https://github.com/Linus-Shyu/StarFetch_Core.git](https://github.com/Linus-Shyu/StarFetch_Core.git)
+git clone https://github.com/Linus-Shyu/StarFetch_Core.git
 cd StarFetch_Core/StarFetch
 cargo build --release
 
