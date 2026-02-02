@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   # ===================================================
-  # Job 1: Linux 构建 (x86_64 和 ARM64)
+  # Job 1: Linux 构建（Ubuntu/Debian .deb + 通用 tar.gz）
   # ===================================================
   build-linux:
     name: Build Linux (${{ matrix.target }})
@@ -19,12 +19,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Ubuntu/Debian .deb：amd64（x86_64）、arm64（aarch64）
           - target: x86_64-unknown-linux-gnu
             deb: true
             use_cross: false
           - target: aarch64-unknown-linux-gnu
             deb: true
             use_cross: true
+          # 通用 Linux（仅 tar.gz，如 Alpine）
           - target: x86_64-unknown-linux-musl
             deb: false
             use_cross: true
