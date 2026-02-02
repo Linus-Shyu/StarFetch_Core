@@ -54,17 +54,15 @@ Used Memory: 10.79 GB
 
 ## 🚀 Installation
 
-用系统自带的包管理器即可安装，和 neofetch 一样简单。
+Install with your system package manager—as simple as neofetch.
 
-### APT (Ubuntu / Debian)
+### APT (Ubuntu / Debian / Kali)
 
-支持 x86_64 和 ARM64（含 Apple Silicon 上的 Ubuntu 虚拟机）。
+On Linux, these two commands are all you need (x86_64 and ARM64):
 
 ```bash
-# 添加仓库（首次安装）
 curl -1sLf 'https://dl.cloudsmith.io/public/starlakeai/starfetch/setup.deb.sh' | sudo -E bash
-# 安装
-sudo apt-get update && sudo apt-get install starfetch
+sudo apt-get install starfetch
 ```
 
 ### Homebrew (macOS)
@@ -82,9 +80,9 @@ winget install Linus-Shyu.StarFetch
 
 ---
 
-### 其他安装方式
+### Other installation options
 
-**通用安装脚本（无包管理器时）：**
+**Universal install script (when no package manager is available):**
 
 ```bash
 # Linux / macOS / BSD
@@ -119,8 +117,7 @@ cargo install --path .
 
 ### Troubleshooting
 
-若出现 `profile package spec 'zlib-rs' in profile 'dev' did not match any packages` 等警告，说明你的 **全局 Cargo 配置**（`~/.cargo/config.toml`）里为 `zlib-rs`、`adler2` 等包设置了 profile 覆盖，而本仓库并未依赖这些包。  
-处理方式：编辑 `~/.cargo/config.toml`，删除或注释掉其中的 `[profile.dev.package.zlib-rs]`、`[profile.release.package.adler2]`、`[profile.release.package.zlib-rs]` 等段落即可；或忽略该警告，不影响构建。
+If you see warnings like `profile package spec 'zlib-rs' in profile 'dev' did not match any packages`, your **global Cargo config** (`~/.cargo/config.toml`) has profile overrides for packages such as `zlib-rs` or `adler2` that this repo does not use. Edit `~/.cargo/config.toml` and remove or comment out sections like `[profile.dev.package.zlib-rs]`, `[profile.release.package.adler2]`, and `[profile.release.package.zlib-rs]`. You can also ignore the warning—it does not affect the build.
 
 ## 📦 Dependencies
 
@@ -142,7 +139,7 @@ cargo install --path .
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
