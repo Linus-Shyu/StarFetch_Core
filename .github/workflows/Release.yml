@@ -49,8 +49,8 @@ jobs:
           set -e
           mkdir -p dist
           
-          # 从父目录复制 LICENSE 用于 .deb 打包
-          cp ../LICENSE .
+          # 从父目录复制 LICENSE 和 README.md 用于 .deb 打包
+          cp ../LICENSE ../README.md .
           
           echo "🔨 Building ${{ matrix.target }}..."
           if [[ "${{ matrix.use_cross }}" == "true" ]]; then
