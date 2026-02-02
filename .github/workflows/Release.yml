@@ -263,7 +263,7 @@ jobs:
           Scope: user
           Installers:
             - Architecture: x64
-              InstallerUrl: $URL
+              InstallerUrl: "$URL"
               InstallerSha256: $SHA_UPPER
               NestedInstallerType: portable
               NestedInstallerFiles:
@@ -326,6 +326,7 @@ jobs:
           MANIFEST_DIR="manifests/l/Linus-Shyu/StarFetch/$V"
           mkdir -p "$MANIFEST_DIR"
           SHA_UPPER=$(echo "$SHA" | tr 'a-f' 'A-F')
+          # 1.10.0: partition=l (first letter of publisher Linus-Shyu, lowercase); path and PackageIdentifier case-sensitive
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.installer.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
           PackageVersion: $V
@@ -333,7 +334,7 @@ jobs:
           Scope: user
           Installers:
             - Architecture: x64
-              InstallerUrl: $URL
+              InstallerUrl: "$URL"
               InstallerSha256: $SHA_UPPER
               NestedInstallerType: portable
               NestedInstallerFiles:
@@ -360,7 +361,6 @@ jobs:
           ManifestType: version
           ManifestVersion: 1.10.0
           EOF
-          # winget 1.10：根级键无前导空格，ManifestVersion 1.10.0
           sed -i 's/^          //' "$MANIFEST_DIR"/*.yaml
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
