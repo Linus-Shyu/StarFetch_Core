@@ -1,6 +1,6 @@
 # WinGet Manifests
 
-Komac 生成的 manifest（1.12.0），已按 winget-pkgs 目录结构存放：`manifests/l/Linus-Shyu/StarFetch/<version>/`。
+Manifest 使用 1.10.0 规范（winget-pkgs 校验要求），已按目录结构存放：`manifests/l/Linus-Shyu/StarFetch/<version>/`。
 
 ## 以后发新版本（不用再在命令行里逐项填）
 
