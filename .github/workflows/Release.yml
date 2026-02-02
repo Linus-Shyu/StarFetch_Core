@@ -48,30 +48,23 @@ jobs:
         run: |
           set -e
           mkdir -p dist
-          
           # 从父目录复制 LICENSE 和 README.md 用于 .deb 打包
           cp ../LICENSE ../README.md .
-          
           echo "🔨 Building ${{ matrix.target }}..."
           if [[ "${{ matrix.use_cross }}" == "true" ]]; then
             cross build --release --target ${{ matrix.target }}
           else
             cargo build --release --target ${{ matrix.target }}
           fi
-          
           if [[ "${{ matrix.deb }}" == "true" ]]; then
             echo "📦 Packaging .deb..."
             cargo deb --target ${{ matrix.target }} --no-build --no-strip
             mv target/${{ matrix.target }}/debian/*.deb dist/
           fi
-
-          echo "📦 Packaging .tar.gz..."
           name="starfetch-${{ matrix.target }}"
           cd "target/${{ matrix.target }}/release"
           tar -czvf "../../../dist/${name}.tar.gz" starfetch
-          cd ../../..
-          
-          cd dist
+          cd ../../../dist
           for file in *; do
             sha256sum "$file" | awk '{print $1}' > "$file.sha256"
           done
@@ -123,15 +116,14 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
       - name: Build and Collect Assets
-        shell: pwsh
         working-directory: StarFetch
+        shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist
+          Set-Location -Path (Join-Path $env:GITHUB_WORKSPACE "StarFetch")
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
           cargo build --release --target x86_64-pc-windows-msvc
-          
           $zipName = "starfetch-x86_64-pc-windows-msvc.zip"
           $zipPath = "dist/$zipName"
-          
           Compress-Archive -Path "target/x86_64-pc-windows-msvc/release/starfetch.exe" -DestinationPath $zipPath -Force
           (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLower() | Out-File -FilePath "$zipPath.sha256" -NoNewline
 
@@ -160,8 +152,19 @@ jobs:
         id: get_ver
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      # 1. GitHub Release
-      - name: Create GitHub Release
+      # 1. GitHub Release（合并多 job 的 artifact 后统一展平到 release-assets/）
+      - name: Flatten Release Assets
+        run: |
+          for dir in release-assets/StarFetch/dist release-assets/dist; do
+            if [ -d "$dir" ]; then
+              cp -a "$dir"/. release-assets/ 2>/dev/null || true
+              rm -rf "$dir"
+            fi
+          done
+          for sub in release-assets/artifacts-*; do
+            [ -d "$sub" ] && cp -a "$sub"/. release-assets/ 2>/dev/null || true && rm -rf "$sub"
+          done
+      - name: Attach Release Assets
         uses: softprops/action-gh-release@v1
         with:
           files: release-assets/*
@@ -169,7 +172,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. Cloudsmith (APT) - 修复：移除了 if 中的 secrets
+      # 2. Cloudsmith (APT) - 不可在 if 中使用 secrets，改为在 run 内判断
       - name: Push to Cloudsmith
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
@@ -179,13 +182,13 @@ jobs:
             echo "::warning::CLOUDSMITH_API_KEY is not set. Skipping Cloudsmith push."
             exit 0
           fi
-          
+          # 兼容 release-assets 或 release-assets/dist
           pip install --upgrade cloudsmith-cli
-          for f in release-assets/*.deb; do
-            cloudsmith push deb starlakeai/starfetch/any-distro/any-version "$f" || true
+          for f in release-assets/*.deb release-assets/dist/*.deb; do
+            [ -f "$f" ] && cloudsmith push deb starlakeai/starfetch/any-distro/any-version "$f" || true
           done
 
-      # 3. Homebrew Tap - 修复：移除了 if 中的 secrets
+      # 3. Homebrew Tap - 不可在 if 中使用 secrets，改为在 run 内判断
       - name: Update Homebrew
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
@@ -194,10 +197,10 @@ jobs:
             echo "::warning::HOMEBREW_TAP_TOKEN is not set. Skipping Homebrew update."
             exit 0
           fi
-
+          # 兼容 release-assets 或 release-assets/dist（上一步已 flatten，此处用 release-assets/）
           V=${{ steps.get_ver.outputs.version }}
-          ARM_SHA=$(cat release-assets/starfetch-aarch64-apple-darwin.tar.gz.sha256)
-          X64_SHA=$(cat release-assets/starfetch-x86_64-apple-darwin.tar.gz.sha256)
+          ARM_SHA=$(cat release-assets/starfetch-aarch64-apple-darwin.tar.gz.sha256 2>/dev/null || cat release-assets/dist/starfetch-aarch64-apple-darwin.tar.gz.sha256)
+          X64_SHA=$(cat release-assets/starfetch-x86_64-apple-darwin.tar.gz.sha256 2>/dev/null || cat release-assets/dist/starfetch-x86_64-apple-darwin.tar.gz.sha256)
           
           git clone https://x-access-token:$GH_TOKEN@github.com/Linus-Shyu/homebrew-tap.git /tmp/tap
           cd /tmp/tap
@@ -228,7 +231,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add . && git commit -m "starfetch v$V" && git push || true
 
-      # 4. Winget - 修复：移除了 if 中的 secrets
+      # 4. Winget - 不可在 if 中使用 secrets，改为在 run 内判断
       - name: Update Winget
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
@@ -239,7 +242,7 @@ jobs:
           fi
           
           V=${{ steps.get_ver.outputs.version }}
-          SHA=$(cat release-assets/starfetch-x86_64-pc-windows-msvc.zip.sha256)
+          SHA=$(cat release-assets/starfetch-x86_64-pc-windows-msvc.zip.sha256 2>/dev/null || cat release-assets/dist/starfetch-x86_64-pc-windows-msvc.zip.sha256)
           URL="https://github.com/${{ github.repository }}/releases/download/v$V/starfetch-x86_64-pc-windows-msvc.zip"
           
           git clone https://x-access-token:$GH_TOKEN@github.com/Linus-Shyu/winget-pkgs.git /tmp/winget
