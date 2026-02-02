@@ -292,3 +292,72 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add . && git commit -m "StarFetch v$V" && git push || true
+
+      # 5. Winget - 自动向官方 microsoft/winget-pkgs 提 PR（需人工 review 合并）
+      - name: Open PR to microsoft/winget-pkgs
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set. Skipping winget-pkgs PR."
+            exit 0
+          fi
+          V=${{ steps.get_ver.outputs.version }}
+          ASSETS="${{ github.workspace }}/release-assets"
+          SHA=$(cat "$ASSETS/starfetch-x86_64-pc-windows-msvc.zip.sha256" 2>/dev/null || cat "$ASSETS/dist/starfetch-x86_64-pc-windows-msvc.zip.sha256" 2>/dev/null || true)
+          if [ -z "$SHA" ]; then
+            echo "::warning::Windows zip sha256 not found, skipping winget-pkgs PR."
+            exit 0
+          fi
+          URL="https://github.com/${{ github.repository }}/releases/download/v$V/starfetch-x86_64-pc-windows-msvc.zip"
+          BRANCH="starfetch-v$V"
+          git clone --depth 1 https://github.com/microsoft/winget-pkgs.git /tmp/winget-upstream
+          cd /tmp/winget-upstream
+          git remote add fork "https://x-access-token:${GH_TOKEN}@github.com/Linus-Shyu/winget-pkgs.git"
+          git fetch origin
+          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || DEFAULT_BRANCH="master"
+          git checkout -b "$BRANCH" "origin/$DEFAULT_BRANCH"
+          MANIFEST_DIR="manifests/l/Linus-Shyu/StarFetch/$V"
+          mkdir -p "$MANIFEST_DIR"
+          cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.installer.yaml" << EOF
+          PackageIdentifier: Linus-Shyu.StarFetch
+          PackageVersion: $V
+          InstallerType: zip
+          Installers:
+            - Architecture: x64
+              InstallerUrl: $URL
+              InstallerSha256: $SHA
+              NestedInstallerType: portable
+              NestedInstallerFiles:
+                - RelativeFilePath: starfetch.exe
+                  PortableCommandAlias: starfetch
+          ManifestType: installer
+          ManifestVersion: 1.4.0
+          EOF
+          cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml" << EOF
+          PackageIdentifier: Linus-Shyu.StarFetch
+          PackageVersion: $V
+          PackageLocale: en-US
+          Publisher: Linus Shyu
+          PackageName: StarFetch
+          License: MIT
+          ShortDescription: A fast and stylish system information fetch tool
+          ManifestType: defaultLocale
+          ManifestVersion: 1.4.0
+          EOF
+          cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.version.yaml" << EOF
+          PackageIdentifier: Linus-Shyu.StarFetch
+          PackageVersion: $V
+          DefaultLocale: en-US
+          ManifestType: version
+          ManifestVersion: 1.4.0
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add . && git diff --staged --quiet || git commit -m "Add Linus-Shyu.StarFetch $V"
+          git push fork "$BRANCH" || true
+          export GH_TOKEN
+          gh pr create --repo microsoft/winget-pkgs --head "Linus-Shyu:$BRANCH" --base "$DEFAULT_BRANCH" \
+            --title "Add Linus-Shyu.StarFetch $V" \
+            --body "Automated PR from [StarFetch_Core](https://github.com/${{ github.repository }}) release [v$V](https://github.com/${{ github.repository }}/releases/tag/v$V)." \
+            || echo "::notice::PR may already exist or creation failed."
