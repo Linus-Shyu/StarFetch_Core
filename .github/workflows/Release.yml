@@ -266,7 +266,7 @@ jobs:
                 - RelativeFilePath: starfetch.exe
                   PortableCommandAlias: starfetch
           ManifestType: installer
-          ManifestVersion: 1.4.0
+          ManifestVersion: 1.10.0
           EOF
           
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml" << EOF
@@ -278,7 +278,7 @@ jobs:
           License: MIT
           ShortDescription: A fast and stylish system information fetch tool
           ManifestType: defaultLocale
-          ManifestVersion: 1.4.0
+          ManifestVersion: 1.10.0
           EOF
           
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.version.yaml" << EOF
@@ -286,9 +286,9 @@ jobs:
           PackageVersion: $V
           DefaultLocale: en-US
           ManifestType: version
-          ManifestVersion: 1.4.0
+          ManifestVersion: 1.10.0
           EOF
-          # winget 要求根级键无前导空格，去除 heredoc 带入的缩进
+          # winget 1.10：根级键无前导空格，ManifestVersion 1.10.0
           sed -i 's/^          //' "$MANIFEST_DIR"/*.yaml
           
           git config user.name "github-actions[bot]"
@@ -334,7 +334,7 @@ jobs:
                 - RelativeFilePath: starfetch.exe
                   PortableCommandAlias: starfetch
           ManifestType: installer
-          ManifestVersion: 1.4.0
+          ManifestVersion: 1.10.0
           EOF
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
@@ -345,16 +345,16 @@ jobs:
           License: MIT
           ShortDescription: A fast and stylish system information fetch tool
           ManifestType: defaultLocale
-          ManifestVersion: 1.4.0
+          ManifestVersion: 1.10.0
           EOF
           cat > "$MANIFEST_DIR/Linus-Shyu.StarFetch.version.yaml" << EOF
           PackageIdentifier: Linus-Shyu.StarFetch
           PackageVersion: $V
           DefaultLocale: en-US
           ManifestType: version
-          ManifestVersion: 1.4.0
+          ManifestVersion: 1.10.0
           EOF
-          # winget 要求根级键无前导空格，符合 manifest 1.10.0 规范
+          # winget 1.10：根级键无前导空格，ManifestVersion 1.10.0
           sed -i 's/^          //' "$MANIFEST_DIR"/*.yaml
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
