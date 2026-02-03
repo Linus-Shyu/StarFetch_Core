@@ -110,12 +110,28 @@ fn main() {
             "https://github.com/Linus-Shyu"
         )
     );
-    print!(" and ");
+    print!(", ");
     print!(
         "{}",
         hyperlink::hyperlink(
             &hyperlink::styled_developer_name_dylan(),
             "https://github.com/xs10l3"
+        )
+    );
+    print!(", ");
+    print!(
+        "{}",
+        hyperlink::hyperlink(
+            &hyperlink::styled_developer_name_cloudsmithy(),
+            "https://github.com/cloudsmithy"
+        )
+    );
+    print!(", and ");
+    print!(
+        "{}",
+        hyperlink::hyperlink(
+            &hyperlink::styled_developer_name_daicx(),
+            "https://github.com/daicx0904"
         )
     );
 

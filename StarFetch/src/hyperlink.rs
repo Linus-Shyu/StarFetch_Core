@@ -77,3 +77,11 @@ pub fn styled_developer_name() -> String {
 pub fn styled_developer_name_dylan() -> String {
     "Dylan Su".to_string()
 }
+
+pub fn styled_developer_name_cloudsmithy() -> String {
+    "cloudsmithy".to_string()
+}
+
+pub fn styled_developer_name_daicx() -> String {
+    "Daicx".to_string()
+}

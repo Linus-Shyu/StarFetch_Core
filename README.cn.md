@@ -91,6 +91,8 @@ cargo install --path .
 
 - **Linus Shyu** ([@Linus-Shyu](https://github.com/Linus-Shyu))
 - **Dylan Su** ([@xs10l3](https://github.com/xs10l3))
+- **cloudsmithy** ([@cloudsmithy](https://github.com/cloudsmithy))
+- **Daicx** ([@daicx0904](https://github.com/daicx0904))
 
 ## 🙏 致谢
 
