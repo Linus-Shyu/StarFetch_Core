@@ -6,6 +6,11 @@
 [![Mascot](https://img.shields.io/badge/Mascot-Ferris-orange?style=for-the-badge)](https://rustacean.net/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
+<p align="center">
+<a href="README.cn.md">简体中文</a>
+<a href="README.md">English</a>
+</p>
+
 A beautiful and fast system information tool written in Rust, inspired by neofetch. StarFetch displays your system information with elegant ASCII art and smart terminal adaptation.
 
 ## 💡 Inspiration & Encouragement
@@ -34,7 +39,7 @@ His reminder that "writing software is fun but can also be very draining" and to
     ╔════════════════════════════════╗
     ║   ★  STARFETCH  ★            ║
     ╚════════════════════════════════╝
-    
+
 Developed by Linus Shyu
 
 hostname
@@ -96,8 +101,8 @@ irm https://raw.githubusercontent.com/Linus-Shyu/StarFetch_Core/master/install.p
 
 ### Prerequisites
 
-* **Rust** (latest stable version) - [Install Rust](https://www.rust-lang.org/tools/install)
-* **Cargo** (comes with Rust)
+- **Rust** (latest stable version) - [Install Rust](https://www.rust-lang.org/tools/install)
+- **Cargo** (comes with Rust)
 
 ### Build from Source
 
@@ -121,21 +126,21 @@ If you see warnings like `profile package spec 'zlib-rs' in profile 'dev' did no
 
 ## 📦 Dependencies
 
-* `ansi_term` - Terminal colors and styling.
-* `sysinfo` - Cross-platform system info.
-* `systemstat` - System statistics (uptime, etc.).
-* `terminal_size` - Terminal width detection.
+- `ansi_term` - Terminal colors and styling.
+- `sysinfo` - Cross-platform system info.
+- `systemstat` - System statistics (uptime, etc.).
+- `terminal_size` - Terminal width detection.
 
 ## 👥 Authors
 
-* **Linus Shyu** ([@Linus-Shyu](https://github.com/Linus-Shyu))
-* **Dylan Su** ([@xs10l3](https://github.com/xs10l3))
+- **Linus Shyu** ([@Linus-Shyu](https://github.com/Linus-Shyu))
+- **Dylan Su** ([@xs10l3](https://github.com/xs10l3))
 
 ## 🙏 Acknowledgments
 
-* **Dylan Araps** - For the original inspiration and kind words.
-* **Rust Foundation** - For guidance on trademark compliance. We use **Ferris the Crab** (the unofficial-official mascot) to represent our love for the Rust community. 🦀
-* **The Open Source Community** - For the amazing crates that make this project possible.
+- **Dylan Araps** - For the original inspiration and kind words.
+- **Rust Foundation** - For guidance on trademark compliance. We use **Ferris the Crab** (the unofficial-official mascot) to represent our love for the Rust community. 🦀
+- **The Open Source Community** - For the amazing crates that make this project possible.
 
 ## 📄 License
 
