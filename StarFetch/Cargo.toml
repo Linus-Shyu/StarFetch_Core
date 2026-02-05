@@ -1,6 +1,6 @@
 [package]
 name = "starfetch"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "A fast and stylish system information fetch tool."
 authors = ["Linus Shyu <0x11@linusshyu.dev>", "cloudsmithy", "Daicx"]
@@ -26,8 +26,6 @@ Part of the Star Lake AI ecosystem, designed for speed and aesthetic.
 """
 license-file = ["LICENSE", "4"] # 确保根目录有 LICENSE 文件
 
-# 必须显式列出二进制：指定 assets 后会替换默认 $auto，不写则 .deb 里没有 /usr/bin/starfetch
-# target/release/ 会被 cargo-deb 替换为实际路径（含 cross 的 target/xxx/release/）
 assets = [
     ["target/release/starfetch", "usr/bin/", "755"],
     ["README.md", "usr/share/doc/starfetch/README", "644"],
