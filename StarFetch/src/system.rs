@@ -453,8 +453,10 @@ pub fn print_system_help_info() {
 
 pub fn print_about() {
     println!(
-        "{} {}",
+        "{} {} {} {}",
         Green.paint("Github Address:https://github.com/Linus-Shyu/StarFetch_Core \n"),
+        Green.paint("Thanks Daicx add Chinese version README.md \n"),
+        Green.paint("Thanks cloudsmithy fix releases.yml \n"),
         Green.paint("Thanks all users! \n"),
     );
 }

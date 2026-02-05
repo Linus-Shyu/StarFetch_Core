@@ -147,4 +147,3 @@ fn main() {
     system::print_disk_info();
 }
 
-// Just wanna test homebrew.
