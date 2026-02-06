@@ -1,124 +1,289 @@
-name: Release Build
+name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'  # 当推送版本标签时触发，如 v0.2.0
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
-    name: Build for ${{ matrix.os }}
+  # ===================================================
+  # Job 1: Linux 构建（Ubuntu/Debian .deb + 通用 tar.gz）
+  # ===================================================
+  build-linux:
+    name: Build Linux (${{ matrix.target }})
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact_name: starfetch-linux-x86_64
-            binary_name: starfetch
-            archive_format: tar.gz
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact_name: starfetch-windows-x86_64
-            binary_name: starfetch.exe
-            archive_format: zip
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: starfetch-macos-x86_64
-            binary_name: starfetch
-            archive_format: tar.gz
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact_name: starfetch-macos-aarch64
-            binary_name: starfetch
-            archive_format: tar.gz
-
-    runs-on: ${{ matrix.os }}
+          # Ubuntu/Debian .deb：amd64（x86_64）、arm64（aarch64）
+          - target: x86_64-unknown-linux-gnu
+            deb: true
+            use_cross: false
+          - target: aarch64-unknown-linux-gnu
+            deb: true
+            use_cross: true
+          # 通用 Linux（仅 tar.gz，如 Alpine）
+          - target: x86_64-unknown-linux-musl
+            deb: false
+            use_cross: true
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - name: Setup MSVC (Windows only)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-          toolset: 14.29
+      - name: Install Tools
+        run: |
+          cargo install cargo-deb
+          if [[ "${{ matrix.use_cross }}" == "true" ]]; then
+            curl -L https://github.com/cross-rs/cross/releases/download/v0.2.5/cross-x86_64-unknown-linux-musl.tar.gz | tar xz
+            sudo mv cross /usr/local/bin/
+          fi
 
-      - name: Cache cargo dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            StarFetch/target/
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build release binary
+      - name: Build and Collect Assets
         working-directory: StarFetch
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Create archive (Linux/macOS)
-        if: runner.os != 'Windows'
-        working-directory: StarFetch/target/${{ matrix.target }}/release
         run: |
-          tar czf ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }} ${{ matrix.binary_name }}
-        shell: bash
+          set -e
+          cd "${GITHUB_WORKSPACE}/StarFetch"
+          mkdir -p dist
+          # 从父目录复制 LICENSE 和 README.md 用于 .deb 打包
+          cp ../LICENSE ../README.md .
+          echo "🔨 Building ${{ matrix.target }}..."
+          if [[ "${{ matrix.use_cross }}" == "true" ]]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+          if [[ "${{ matrix.deb }}" == "true" ]]; then
+            echo "📦 Packaging .deb..."
+            cargo deb --target ${{ matrix.target }} --no-build --no-strip
+            mv target/${{ matrix.target }}/debian/*.deb dist/
+          fi
+          name="starfetch-${{ matrix.target }}"
+          cd "target/${{ matrix.target }}/release"
+          tar -czvf "../../../dist/${name}.tar.gz" starfetch
+          cd ../../../dist
+          for file in *; do
+            sha256sum "$file" | awk '{print $1}' > "$file.sha256"
+          done
 
-      - name: Create archive (Windows)
-        if: runner.os == 'Windows'
-        working-directory: StarFetch/target/${{ matrix.target }}/release
-        run: |
-          Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath ../../../${{ matrix.artifact_name }}.${{ matrix.archive_format }}
-        shell: pwsh
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: StarFetch/${{ matrix.artifact_name }}.${{ matrix.archive_format }}
+          name: artifacts-linux-${{ matrix.target }}
+          path: StarFetch/dist/*
 
-  release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
+  # ===================================================
+  # Job 2: macOS 构建
+  # ===================================================
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
     steps:
-      - name: Download all artifacts
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+      - name: Build and Collect Assets
+        working-directory: StarFetch
+        run: |
+          cd "${GITHUB_WORKSPACE}/StarFetch"
+          mkdir -p dist
+          for target in x86_64-apple-darwin aarch64-apple-darwin; do
+            cargo build --release --target "$target"
+            
+            filename="starfetch-$target.tar.gz"
+            tar -czvf "dist/$filename" -C "target/$target/release" starfetch
+            
+            cd dist
+            shasum -a 256 "$filename" | awk '{print $1}' > "$filename.sha256"
+            cd ..
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-macos
+          path: StarFetch/dist/*
+
+  # ===================================================
+  # Job 3: Windows 构建
+  # ===================================================
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Build and Collect Assets
+        working-directory: StarFetch
+        shell: pwsh
+        run: |
+          Set-Location -Path (Join-Path $env:GITHUB_WORKSPACE "StarFetch")
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          cargo build --release --target x86_64-pc-windows-msvc
+          $zipName = "starfetch-x86_64-pc-windows-msvc.zip"
+          $zipPath = "dist/$zipName"
+          Compress-Archive -Path "target/x86_64-pc-windows-msvc/release/starfetch.exe" -DestinationPath $zipPath -Force
+          (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLower() | Out-File -FilePath "$zipPath.sha256" -NoNewline
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-windows
+          path: StarFetch/dist/*
+
+  # ===================================================
+  # Job 4: 发布与分发
+  # ===================================================
+  publish:
+    name: Publish Release
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./artifacts
+          path: ./release-assets
+          merge-multiple: true
 
-      - name: Extract tag name
-        id: tag
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      - name: Get Version
+        id: get_ver
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      # 1. GitHub Release（合并多 job 的 artifact 后统一展平到 release-assets/）
+      - name: Flatten Release Assets
+        run: |
+          for dir in release-assets/StarFetch/dist release-assets/dist; do
+            if [ -d "$dir" ]; then
+              cp -a "$dir"/. release-assets/ 2>/dev/null || true
+              rm -rf "$dir"
+            fi
+          done
+          for sub in release-assets/artifacts-*; do
+            [ -d "$sub" ] && cp -a "$sub"/. release-assets/ 2>/dev/null || true && rm -rf "$sub"
+          done
+      - name: Attach Release Assets
         uses: softprops/action-gh-release@v1
         with:
-          name: Release ${{ steps.tag.outputs.TAG }}
-          body: |
-            ## Changes in ${{ steps.tag.outputs.TAG }}
-            
-            ### Downloads
-            
-            - **Linux (x86_64)**: [starfetch-linux-x86_64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-linux-x86_64.tar.gz)
-            - **Windows (x86_64)**: [starfetch-windows-x86_64.zip](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-windows-x86_64.zip)
-            - **macOS (Intel)**: [starfetch-macos-x86_64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-macos-x86_64.tar.gz)
-            - **macOS (Apple Silicon)**: [starfetch-macos-aarch64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG }}/starfetch-macos-aarch64.tar.gz)
-          
-          files: |
-            artifacts/*/starfetch-*.tar.gz
-            artifacts/*/starfetch-*.zip
+          files: release-assets/*
+          draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Cloudsmith (APT) - 不可在 if 中使用 secrets，改为在 run 内判断
+      - name: Push to Cloudsmith
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: |
+          # 在脚本内部判断 Key 是否存在
+          if [ -z "$CLOUDSMITH_API_KEY" ]; then
+            echo "::warning::CLOUDSMITH_API_KEY is not set. Skipping Cloudsmith push."
+            exit 0
+          fi
+          # 兼容 release-assets 或 release-assets/dist
+          pip install --upgrade cloudsmith-cli
+          for f in release-assets/*.deb release-assets/dist/*.deb; do
+            [ -f "$f" ] && cloudsmith push deb starlakeai/starfetch/any-distro/any-version "$f" || true
+          done
+
+      # 3. Homebrew Tap - 不可在 if 中使用 secrets，改为在 run 内判断
+      - name: Update Homebrew
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set. Skipping Homebrew update."
+            exit 0
+          fi
+          # 兼容 release-assets 或 release-assets/dist（上一步已 flatten，此处用 release-assets/）
+          V=${{ steps.get_ver.outputs.version }}
+          ARM_SHA=$(cat release-assets/starfetch-aarch64-apple-darwin.tar.gz.sha256 2>/dev/null || cat release-assets/dist/starfetch-aarch64-apple-darwin.tar.gz.sha256)
+          X64_SHA=$(cat release-assets/starfetch-x86_64-apple-darwin.tar.gz.sha256 2>/dev/null || cat release-assets/dist/starfetch-x86_64-apple-darwin.tar.gz.sha256)
+          
+          git clone https://x-access-token:$GH_TOKEN@github.com/Linus-Shyu/homebrew-tap.git /tmp/tap
+          cd /tmp/tap
+          mkdir -p Formula
+          
+          cat > Formula/starfetch.rb << EOF
+          class Starfetch < Formula
+            desc "A fast and stylish system information fetch tool"
+            homepage "https://github.com/Linus-Shyu/StarFetch_Core"
+            version "$V"
+            license "MIT"
+            
+            if Hardware::CPU.arm?
+              url "https://github.com/${{ github.repository }}/releases/download/v$V/starfetch-aarch64-apple-darwin.tar.gz"
+              sha256 "$ARM_SHA"
+            else
+              url "https://github.com/${{ github.repository }}/releases/download/v$V/starfetch-x86_64-apple-darwin.tar.gz"
+              sha256 "$X64_SHA"
+            end
+
+            def install
+              bin.install "starfetch"
+            end
+          end
+          EOF
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -m "starfetch v$V" && git push || true
+
+      # 4. Winget - 用仓库内 komac 生成的 manifest 模板（winget/manifests/.../0.2.3/）替换版本/URL/SHA/日期后提 PR
+      - name: Update Winget (manifest from repo)
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set. Skipping Winget PR."
+            exit 0
+          fi
+          V=${{ steps.get_ver.outputs.version }}
+          RELEASE_DATE=$(date +%Y-%m-%d)
+          URL="https://github.com/${{ github.repository }}/releases/download/v$V/starfetch-x86_64-pc-windows-msvc.zip"
+          SHA=$(cat release-assets/starfetch-x86_64-pc-windows-msvc.zip.sha256 2>/dev/null || true)
+          if [ -z "$SHA" ]; then
+            echo "::warning::Windows zip sha256 not found. Skipping Winget PR."
+            exit 0
+          fi
+          SHA_UPPER=$(echo "$SHA" | tr 'a-f' 'A-F')
+          TEMPLATE_DIR="winget/manifests/l/Linus-Shyu/StarFetch/0.2.3"
+          if [ ! -d "$TEMPLATE_DIR" ]; then
+            echo "::warning::Winget template $TEMPLATE_DIR not found. Skipping Winget PR."
+            exit 0
+          fi
+          git clone --depth 1 https://github.com/microsoft/winget-pkgs.git /tmp/winget-pkgs
+          cd /tmp/winget-pkgs
+          git remote add fork "https://x-access-token:${GH_TOKEN}@github.com/Linus-Shyu/winget-pkgs.git"
+          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || DEFAULT_BRANCH="master"
+          BRANCH="starfetch-v$V"
+          git checkout -b "$BRANCH" "origin/$DEFAULT_BRANCH"
+          MANIFEST_DIR="manifests/l/Linus-Shyu/StarFetch/$V"
+          mkdir -p "$MANIFEST_DIR"
+          REPO_ROOT="${{ github.workspace }}"
+          sed -e "s/0\.2\.3/$V/g" \
+              -e "s|https://github.com/Linus-Shyu/StarFetch_Core/releases/download/v0.2.3/starfetch-x86_64-pc-windows-msvc.zip|$URL|g" \
+              -e "s/4D8E1F14F4877A7400E5CD6DBA5912B93B616DD905A5DC820C8157FC936926FA/$SHA_UPPER/g" \
+              -e "s/2026-02-02/$RELEASE_DATE/g" \
+              "$REPO_ROOT/$TEMPLATE_DIR/Linus-Shyu.StarFetch.installer.yaml" > "$MANIFEST_DIR/Linus-Shyu.StarFetch.installer.yaml"
+          sed -e "s/0\.2\.3/$V/g" \
+              -e "s|/v0.2.3|/v$V|g" \
+              "$REPO_ROOT/$TEMPLATE_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml" > "$MANIFEST_DIR/Linus-Shyu.StarFetch.locale.en-US.yaml"
+          sed -e "s/0\.2\.3/$V/g" \
+              "$REPO_ROOT/$TEMPLATE_DIR/Linus-Shyu.StarFetch.yaml" > "$MANIFEST_DIR/Linus-Shyu.StarFetch.yaml"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add . && git diff --staged --quiet || git commit -m "Add Linus-Shyu.StarFetch $V"
+          git fetch fork "$BRANCH" 2>/dev/null || true
+          git push fork "$BRANCH" --force-with-lease || true
+          export GH_TOKEN
+          gh pr create --repo microsoft/winget-pkgs --head "Linus-Shyu:$BRANCH" --base "$DEFAULT_BRANCH" \
+            --title "Add Linus-Shyu.StarFetch $V" \
+            --body "Automated PR from [StarFetch_Core](https://github.com/${{ github.repository }}) release [v$V](https://github.com/${{ github.repository }}/releases/tag/v$V). Manifests generated from komac template (1.12.0)." \
+            || echo "::notice::PR may already exist or creation failed."
